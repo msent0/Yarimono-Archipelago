@@ -2513,7 +2513,12 @@
         if (!client) return res;
         if (client.slot_data.limited_cheat_tackle === 0) return res;
         let cheatTackleLimit = (client.slot_data.limited_cheat_tackle || 0) + (SaveStorage.get($gameSystem, "cheatTackleLimitBonus") || 0);
-        this.SpriteStrC( PN_ExAtkCount , " Ex Attack Count " + $gameVariables.value(VN_ExAtkCount) + "/" + cheatTackleLimit + " ", 10 , 720 , 778);
+        let cheatTackleUses = $gameVariables.value(VN_ExAtkCount);
+        if (_isInBattle()) {
+            // While in battle AddExAtkCount stores the number of uses during that battle
+            cheatTackleUses += AddExAtkCount;
+        }
+        this.SpriteStrC( PN_ExAtkCount , " Ex Attack Count " + cheatTackleUses + "/" + cheatTackleLimit + " ", 10 , 720 , 778);
         return res;
     }
 
@@ -2524,20 +2529,29 @@
         if (!client) return false;
         if (client.slot_data.limited_cheat_tackle === 0) return false;
         let cheatTackleLimit = (client.slot_data.limited_cheat_tackle || 0) + (SaveStorage.get($gameSystem, "cheatTackleLimitBonus") || 0);
-        return $gameVariables.value(VN_ExAtkCount) >= cheatTackleLimit;
+        let cheatTackleUses = $gameVariables.value(VN_ExAtkCount);
+        if (_isInBattle()) {
+            // While in battle AddExAtkCount stores the number of uses during that battle
+            cheatTackleUses += AddExAtkCount;
+        }
+        return cheatTackleUses >= cheatTackleLimit;
     }
 
     const _Game_Interpreter_BtlSelect_Tatakau_Update = Game_Interpreter.prototype.BtlSelect_Tatakau_Update;
     Game_Interpreter.prototype.BtlSelect_Tatakau_Update = function (ckMode) {
         if (!client) return _Game_Interpreter_BtlSelect_Tatakau_Update.call(this, ckMode);
-        if (cheatTackleLimitReached()) {
-            if (Input.isTriggered('ok')) {
-                PlayerUseWazaData = battle_Class.plYarimons[battle_Class.PLMonNo].btlWazas[ckMode.selecterNo];
-                if (PlayerUseWazaData.id === WazaID._チートタックル || PlayerUseWazaData.id === WazaID._未来への翼) {
+        if (client.slot_data.limited_cheat_tackle === 0) return _Game_Interpreter_BtlSelect_Tatakau_Update.call(this, ckMode);
+        PlayerUseWazaData = battle_Class.plYarimons[battle_Class.PLMonNo].btlWazas[ckMode.selecterNo];
+        if (Input.isTriggered('ok')) {
+            if (PlayerUseWazaData.id === WazaID._チートタックル || PlayerUseWazaData.id === WazaID._未来への翼) {
+                if (cheatTackleLimitReached()) {
                     return // Eat the input and do nothing, preventing the move from being used.
+                } else {
+                    // Queue an update to redraw the UI so the number updates.
+                    PicFrame_ReDrawFlg = true;
                 }
             }
-        }
+        } 
         return _Game_Interpreter_BtlSelect_Tatakau_Update.call(this, ckMode);
     }
 
