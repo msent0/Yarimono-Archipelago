@@ -476,7 +476,8 @@
     }
 
     function normalizeHost(input) {
-        let scheme = "ws";
+        // Prefer wss
+        let scheme = "wss";
         let str = (input || "").trim();
         const match = str.match(/^(wss?):\/\/(.+)$/i);
         if (match) { scheme = match[1].toLowerCase(); str = match[2]; }
@@ -840,41 +841,63 @@
 
         _openSocket() {
             return new Promise((resolve, reject) => {
-                const { url } = normalizeHost(this.host);
+                let { scheme, hostPort, url } = normalizeHost(this.host);
                 log(`opening ${url}`);
 
                 let socket;
-                try { socket = new WebSocket(url); }
-                catch (e) {
-                    return reject(new Error(`WebSocket threw: ${e.message || e}`));
-                }
-                this.socket = socket;
-
-                const timeout = setTimeout(() => {
-                    try { socket.close(); } catch (e) {}
-                    reject(new Error(`Connect timed out after ${CONNECT_TIMEOUT_MS}ms to ${url}`));
-                }, CONNECT_TIMEOUT_MS);
-
-                socket.onopen = () => {
-                    clearTimeout(timeout);
-                    log("socket open");
-                    resolve();
-                };
-                socket.onclose = (ev) => {
-                    clearTimeout(timeout);
-                    const detail = `code=${ev.code} reason=${ev.reason || '<none>'} wasClean=${ev.wasClean}`;
-                    if (!this.connected) {
-                        // Failed before/during auth.
-                        reject(new Error(`WebSocket closed before connect: ${detail} (url=${url})`));
-                    } else {
-                        warn(`socket closed: ${detail}`);
-                        this.connected = false;
-                        this.events.emit("disconnected", { code: ev.code, reason: ev.reason });
-                        this._scheduleReconnect();
+                let retriedWithAlternateScheme = false;
+                function connect(forcedScheme) {
+                    if (forcedScheme) {
+                        url = `${forcedScheme}://${hostPort}`;
+                        log(`attempting connection with ${forcedScheme}:// scheme to ${hostPort}`);
                     }
-                };
-                socket.onerror = () => {};
-                socket.onmessage = (ev) => this._onMessage(ev.data);
+                    try { socket = new WebSocket(url); }
+                    catch (e) {
+                        return reject(new Error(`WebSocket threw: ${e.message || e}`));
+                    }
+                    this.socket = socket;
+
+                    const timeout = setTimeout(() => {
+                        try { socket.close(); } catch (e) {}
+                        reject(new Error(`Connect timed out after ${CONNECT_TIMEOUT_MS}ms to ${url}`));
+                    }, CONNECT_TIMEOUT_MS);
+
+                    socket.onopen = () => {
+                        clearTimeout(timeout);
+                        log("socket open");
+                        resolve();
+                    };
+                    socket.onclose = (ev) => {
+                        clearTimeout(timeout);
+                        const detail = `code=${ev.code} reason=${ev.reason || '<none>'} wasClean=${ev.wasClean}`;
+                        if (!this.connected) {
+                            // Failed before/during auth.
+                            if (!retriedWithAlternateScheme) {
+                                // Try again with whatever scheme we didn't try before.
+                                if (scheme === "wss") {
+                                    log(`retrying with ws:// instead of wss:// for ${hostPort}`);
+                                    retriedWithAlternateScheme = true;
+                                    connect.call(this, "ws");
+                                    return;
+                                } else if (scheme === "ws") {
+                                    log(`retrying with wss:// instead of ws:// for ${hostPort}`);
+                                    retriedWithAlternateScheme = true;
+                                    connect.call(this, "wss");
+                                    return;
+                                }
+                            }
+                            reject(new Error(`WebSocket closed before connect: ${detail} (url=${url})`));
+                        } else {
+                            warn(`socket closed: ${detail}`);
+                            this.connected = false;
+                            this.events.emit("disconnected", { code: ev.code, reason: ev.reason });
+                            this._scheduleReconnect();
+                        }
+                    };
+                    socket.onerror = () => {};
+                    socket.onmessage = (ev) => this._onMessage(ev.data);
+                }
+                connect.call(this);
             });
         }
 
