@@ -23,7 +23,9 @@ Several trainers added in DLC1 and DLC2 that scale with the player have been mod
 There's an additional setting to limit the total number of cheat tackle uses and for unlocking gallery scenes to grant extra cheat tackle uses. Be warned that this can lead to soft locks (since you can't switch to easy and cheat tackle your way though) if you go into events like the ruins or chapter 5 sequence unprepared. You may want to make a separate save before entering these sections.
 
 # Supported Versions
-Only version 4.00 of the game is supported. This is the version currently available on DLsite, 072project, and the version you get if you buy the game and both DLCs on Steam and install the DLC2 patch. All three of these versions of 4.00 are compatible. Any other version of the game has not been tested and is unlikely to work, including the unpatched Steam version. The randomization should work with any language selected, but text replacements to show Archipelago items names for some items will not apply correctly on anything but English. 
+Only version 4.00 of the game is supported. This is the version currently available on DLsite, 072project, and the version you get if you buy the game and both DLCs on Steam and install the DLC2 patch. All three of these versions of 4.00 are compatible. Any other version of the game has not been tested and is unlikely to work, including the unpatched Steam version. The randomization should work with any language selected, but text replacements to show Archipelago items names for some items will not apply correctly on anything but English.
+
+Requires Archipelago version 0.6.7 or higher.
 
 # Installation Instructions
 You are assumed to have the Archipelago launcher installed already.
