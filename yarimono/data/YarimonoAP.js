@@ -2279,6 +2279,14 @@
             return [callCmd, ...list];
         },
     });
+    
+    // M8 E11, remove the command 201 transfer to map 168 (second param)
+    defineEventPatch({
+        target: { mapId: 8, eventId: 11 },
+        transform: replaceMatching((cmd) => cmd.code === 201 && cmd.parameters[1] === 168, () => {
+            log("Removing transfer to map 168 from M8 E11");
+        }),
+    });
     // #endregion
 
 
