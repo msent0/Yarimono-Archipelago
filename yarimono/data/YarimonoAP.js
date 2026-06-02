@@ -2393,17 +2393,24 @@
         const trackerId = switchId + MOVE_TUTOR_OFFSET;
         defineEventPatch({
             target: { commonEventId },
-            transform: replaceMatching(
-                (cmd) => cmd.code === 121
-                      && cmd.parameters
-                      && cmd.parameters[0] === switchId
-                      && cmd.parameters[1] === switchId
-                      && cmd.parameters[2] === 0,
-                () => {
-                    log(`CE${commonEventId} switch ${switchId} flip redirected → ${trackerId}`);
-                    $gameSwitches.setValue(trackerId, true);
-                },
-            ),
+            transform: (list, _ctx) => {
+                let rewrites = 0;
+                for (const cmd of list) {
+                    const pp = cmd.parameters;
+                    if (!pp) continue;
+                    if (cmd.code === 121 && pp[0] === switchId && pp[1] === switchId) {
+                        pp[0] = trackerId;
+                        pp[1] = trackerId;
+                        rewrites += 1;
+                    } else if (cmd.code === 111 && pp[0] === 0 && pp[1] === switchId) {
+                        pp[1] = trackerId;
+                        rewrites += 1;
+                    }
+                }
+                if (rewrites > 0) {
+                    log(`CE${commonEventId}: rewrote ${rewrites} switch ${switchId} → ${trackerId}`);
+                }
+            },
         });
     }
     // #endregion
