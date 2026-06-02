@@ -831,6 +831,22 @@
 
         /** Mark this slot as having completed its goal. */
         sendGoalComplete() {
+            SaveStorage.set($gameSystem, 'goalComplete', true);
+            this._send({ cmd: "StatusUpdate", status: CLIENT_GOAL });
+        }
+
+        /** 
+         * Re-announce goal completion if we've recorded it locally but the
+         * server doesn't already think we've completed.
+         */
+        _resendGoalIfComplete(connectedMsg) {
+            if (!SaveStorage.get($gameSystem, 'goalComplete')) return;
+            const serverStatus = connectedMsg && connectedMsg.client_status;
+            if (serverStatus === CLIENT_GOAL) {
+                log("Goal already recorded server-side; skipping resend.");
+                return;
+            }
+            log("Resending goal-complete status to server.");
             this._send({ cmd: "StatusUpdate", status: CLIENT_GOAL });
         }
 
@@ -983,6 +999,7 @@
                     this._hasConnectedOnce = true;
                     this._scoutAllPlaceholders();
                     this._reconcileChecks(msg);
+                    this._resendGoalIfComplete(msg);
                     break;
                 case "ConnectionRefused":
                     this.events.emit("_authRefused", msg);
