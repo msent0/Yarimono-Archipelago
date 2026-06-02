@@ -1333,6 +1333,13 @@
     const _MenuHSceneOpen = MenuHSceneOpen;
     MenuHSceneOpen = function(_charaId, No) {
         if (client && client.slot_data.randomize_yariman_encyclopedia) {
+            // If we have a tempSave (_isInBattle()), that means we're rewatching a scene
+            // in the gallery. These scenes often contain the triggers to unlock the scene
+            // itself. We stop these triggers from sending checks.
+            if (_isInBattle()) {
+                log(`In battle, allowing scene ${No} for char ${_charaId} to open without sending check.`);
+                return _MenuHSceneOpen.apply(this, arguments);
+            }
             let charNo = galleryIndexFromYarimanId(_charaId);
             let locId = _sceneLocationId(charNo, No);
             log(`H-scene unlocked for char ${charNo} scene ${No}, marking location ${locId} as checked.`);
