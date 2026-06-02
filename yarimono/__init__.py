@@ -154,6 +154,7 @@ class YarimonoWorld(World):
         """Attach each LocationDef to its declared region."""
         # Include extra-shop locations into the location pool.
         self._extra_shop_locations = extra_shop_locations(int(self.options.extra_levels))
+        used_extra_codes = {loc.code for loc in self._extra_shop_locations}
 
         # Filter scenes based on the encyclopedia option.
         include_scenes = bool(self.options.randomize_yariman_encyclopedia)
@@ -161,9 +162,8 @@ class YarimonoWorld(World):
         for loc_def in LOCATION_BY_NAME.values():
             if loc_def.category == LocCategory.SCENE_UNLOCK and not include_scenes:
                 continue
-            self._attach_location(loc_def)
-
-        for loc_def in self._extra_shop_locations:
+            if loc_def.category == LocCategory.EXTRA_SHOP and loc_def.code not in used_extra_codes:
+                continue
             self._attach_location(loc_def)
 
     def _attach_location(self, loc_def) -> None:

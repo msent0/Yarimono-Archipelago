@@ -471,34 +471,54 @@ LEVEL_GRANTS: list[LocationDef] = [
 
 
 def extra_shop_locations(count: int) -> list[LocationDef]:
+    """Distribute `count` AP slots across shops.
+    Phase 1: Round-robin while respecting each shop's preferred `cap`. This
+    keeps all additions visible in the UI.
+    Phase 2: Once every shop has hit its cap but `count` is still
+    > 0, keep distributing one per shop per pass. Shops will exceed their
+    ability to display items, but they will still be accessible.
+    """
     if count <= 0:
         return []
-    total_cap = sum(cap for _, cap, _ in AP_PURCHASE_SLOTS)
-    if count > total_cap:
-        raise ValueError(f"extra_levels={count} exceeds total shop capacity {total_cap}")
 
     out: list[LocationDef] = []
     filled = [0] * len(AP_PURCHASE_SLOTS)
     next_id = 0
+
+    def _place(i: int) -> None:
+        nonlocal next_id
+        region, _cap, label = AP_PURCHASE_SLOTS[i]
+        filled[i] += 1
+        out.append(LocationDef(
+            EXTRA_SHOP_BASE_ID + next_id,
+            f"{label} — AP Slot {filled[i]}",
+            LocCategory.EXTRA_SHOP,
+            region=region,
+        ))
+        next_id += 1
+
+    # Phase 1: Respect slot limits.
     while count > 0:
         progress = False
-        for i, (region, cap, label) in enumerate(AP_PURCHASE_SLOTS):
+        for i, (_region, cap, _label) in enumerate(AP_PURCHASE_SLOTS):
             if count <= 0:
                 break
             if filled[i] >= cap:
                 continue
-            filled[i] += 1
-            out.append(LocationDef(
-                EXTRA_SHOP_BASE_ID + next_id,
-                f"{label} — AP Slot {filled[i]}",
-                LocCategory.EXTRA_SHOP,
-                region=region,
-            ))
-            next_id += 1
+            _place(i)
             count -= 1
             progress = True
         if not progress:
             break
+
+    # Phase 2: Slots exhausted, keep distributing evenly.
+    while count > 0:
+        for i in range(len(AP_PURCHASE_SLOTS)):
+            if count <= 0:
+                break
+            _place(i)
+            count -= 1
+
     return out
 
 
@@ -1280,9 +1300,19 @@ ULTIMATE_MOVES: list[LocationDef] = [
 ]
 
 
+# Pre-generate every possible extra-shop slot so we can put them in
+# location_name_to_id.
+from .Options import ExtraLevels as _ExtraLevels
+_MAX_EXTRA_SHOP_LOCATIONS = max(
+    int(_ExtraLevels.range_end),
+    sum(cap for _, cap, _ in AP_PURCHASE_SLOTS),
+)
+ALL_EXTRA_SHOP_LOCATIONS: list[LocationDef] = extra_shop_locations(_MAX_EXTRA_SHOP_LOCATIONS)
+
 ALL_LOCATIONS: list[LocationDef] = (
         TRAINER_FIGHTS + LEVEL_GRANTS + PICKUPS + KEY_PICKUPS
         + EVENT_PURCHASES + SCENES + STORY_CHECKPOINTS + ULTIMATE_MOVES
+        + ALL_EXTRA_SHOP_LOCATIONS
 )
 LOCATION_BY_NAME: dict[str, LocationDef] = {loc.name: loc for loc in ALL_LOCATIONS}
 LOCATION_BY_CODE: dict[int, LocationDef] = {loc.code: loc for loc in ALL_LOCATIONS}
