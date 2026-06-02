@@ -281,6 +281,21 @@
 .debug-overlay .log .t { color: #888; margin-right: 4px; }
 .debug-overlay .log .warn  { color: #fbb96a; }
 .debug-overlay .log .error { color: #ff8888; }
+.watch-overlay {
+    position: fixed;
+    right: 8px; bottom: 8px;
+    z-index: ${Z_INDEX.toast};
+    pointer-events: none;
+    background: rgba(0,0,0,0.75);
+    color: #ddd;
+    font: 11px/1.25 Consolas, monospace;
+    padding: 4px 8px;
+    max-width: 320px;
+    border: 1px solid #444;
+}
+.watch-overlay .row { white-space: pre; }
+.watch-overlay .k { color: #9cf; margin-right: 4px; }
+.watch-overlay .v { color: #fff; }
 `.trim();
 
     function ensureStyles() {
@@ -317,8 +332,8 @@
         document.body.appendChild(_blockerNode);
 
         _blockerHandler = (e) => {
-            // Always allow F5 (return to title), F10 (debug overlay toggle).
-            if (e.type === "keydown" && (e.key === "F5" || e.key === "F10")) return;
+            // Always allow F5 (return to title), F10 (debug overlay), F11 (cheat console).
+            if (e.type === "keydown" && (e.key === "F5" || e.key === "F10" || e.key === "F11")) return;
 
             if (allowInside && allowInside.contains(e.target)) return;
 
@@ -586,6 +601,223 @@
             _toggleDebugOverlay();
         }
     }, true);
+    // #endregion
+
+    // #region Cheat/Debug Console
+    // Commands:
+    //   SW <id> [value]    print/set switch
+    //   VAR <id> [value]   print/set variable
+    //   MAP <id> [x] [y]   transfer to map (coords default to current player)
+    //   WATCH <kind> <id>  pin to bottom-right overlay; WATCH CLEAR resets
+    //   ITEM <id> [count]  grant/remove items (default +1; negative removes)
+    //   LVL [+N|-N|N]      print TrainerLv, or delta / absolute set
+
+    const _UNLOCK_SEQ = 'msent';
+    let _seqBuf = '';
+    
+    window.addEventListener('keydown', (e) => {
+        // Ignore when typing into a real input.
+        if (e.target && /^(input|textarea)$/i.test(e.target.tagName)) return;
+        if (e.key === 'F11') {
+            let consoleUnlocked = Storage.get('cheatConsoleUnlocked');
+            if (!consoleUnlocked) return;
+            e.preventDefault();
+            e.stopPropagation();
+            _openCheatConsole().catch(err => error("cheat console:", err));
+            return;
+        }
+        if (!/^[a-zA-Z]$/.test(e.key)) { _seqBuf = ''; return; }
+        _seqBuf = (_seqBuf + e.key.toLowerCase()).slice(-_UNLOCK_SEQ.length);
+        if (_seqBuf === _UNLOCK_SEQ && !Storage.get('cheatConsoleUnlocked')) {
+            _seqBuf = '';
+            Storage.set('cheatConsoleUnlocked', true);
+            showToast("Debug console unlocked — press F11", { variant: 'info' });
+        }
+    }, true);
+
+    let _watches = null;  // [{ kind: 'sw'|'var', id: number }]
+    function _loadWatches() {
+        if (_watches !== null) return _watches;
+        const raw = Storage.get('cheatWatches');
+        _watches = Array.isArray(raw) ? raw.filter(w =>
+            w && (w.kind === 'sw' || w.kind === 'var') && Number.isFinite(w.id)
+        ) : [];
+        if (_watches.length > 0) _ensureWatchOverlay();
+        return _watches;
+    }
+    function _saveWatches() {
+        Storage.set('cheatWatches', _watches || []);
+    }
+
+    // Restore the watch overlay automatically once the game globals exist.
+    const _watchBootTick = setInterval(() => {
+        if (typeof $gameSwitches === 'undefined' || !$gameSwitches) return;
+        clearInterval(_watchBootTick);
+        const watches = _loadWatches();
+        if (watches.length > 0) _ensureWatchOverlay();
+    }, 500);
+    let _watchOverlayNode = null;
+    let _watchOverlayTick = null;
+
+    function _redrawWatchOverlay() {
+        if (!_watchOverlayNode) return;
+        const watches = _loadWatches();
+        if (watches.length === 0) {
+            if (_watchOverlayNode.parentNode) _watchOverlayNode.parentNode.removeChild(_watchOverlayNode);
+            _watchOverlayNode = null;
+            if (_watchOverlayTick != null) { clearInterval(_watchOverlayTick); _watchOverlayTick = null; }
+            return;
+        }
+        while (_watchOverlayNode.firstChild) {
+            _watchOverlayNode.removeChild(_watchOverlayNode.firstChild);
+        }
+        for (const w of watches) {
+            let v = '?';
+            try {
+                if (w.kind === 'sw') v = String(!!$gameSwitches.value(w.id));
+                else if (w.kind === 'var') v = String($gameVariables.value(w.id));
+            } catch (_) {}
+            const row = document.createElement('div');
+            row.className = 'row';
+            const k = document.createElement('span');
+            k.className = 'k';
+            k.textContent = (w.kind === 'sw' ? 'sw' : 'var') + w.id;
+            const vEl = document.createElement('span');
+            vEl.className = 'v';
+            vEl.textContent = v;
+            row.appendChild(k);
+            row.appendChild(vEl);
+            _watchOverlayNode.appendChild(row);
+        }
+    }
+
+    function _ensureWatchOverlay() {
+        if (_watchOverlayNode) return;
+        ensureStyles();
+        _watchOverlayNode = document.createElement('div');
+        _watchOverlayNode.className = 'watch-overlay';
+        document.body.appendChild(_watchOverlayNode);
+        _watchOverlayTick = setInterval(_redrawWatchOverlay, 250);
+        _redrawWatchOverlay();
+    }
+
+    async function _openCheatConsole() {
+        const res = await promptInput("Debug Console", [
+            { name: "Command", type: "text", value: "" },
+        ], { buttons: [
+            { label: 'Run', primary: true },
+            { label: 'Cancel', cancel: true },
+        ]});
+        if (!res.values) return;
+        const line = (res.values[0] || '').trim();
+        if (!line) return;
+        _runCheat(line);
+    }
+
+    function _runCheat(line) {
+        const parts = line.split(/\s+/);
+        const cmd = (parts[0] || '').toUpperCase();
+        const args = parts.slice(1);
+        try {
+            if (cmd === 'SW') _cheatSwitch(args);
+            else if (cmd === 'VAR') _cheatVariable(args);
+            else if (cmd === 'MAP') _cheatMap(args);
+            else if (cmd === 'WATCH') _cheatWatch(args);
+            else if (cmd === 'ITEM') _cheatItem(args);
+            else if (cmd === 'LVL') _cheatLevel(args);
+            else showToast(`unknown command: ${cmd}`, { variant: 'error', ms: 4000 });
+        } catch (e) {
+            showToast(`error: ${e && e.message || e}`, { variant: 'error', ms: 4000 });
+        }
+    }
+
+    function _cheatSwitch(args) {
+        const id = parseInt(args[0], 10);
+        if (!Number.isFinite(id)) throw new Error("usage: SW <id> [value]");
+        if (args.length < 2) {
+            showToast(`sw${id} = ${$gameSwitches.value(id)}`, { variant: 'info', ms: 4000 });
+            return;
+        }
+        const v = /^(true|on|1)$/i.test(args[1]);
+        $gameSwitches.setValue(id, v);
+        showToast(`sw${id} := ${v}`, { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatVariable(args) {
+        const id = parseInt(args[0], 10);
+        if (!Number.isFinite(id)) throw new Error("usage: VAR <id> [value]");
+        if (args.length < 2) {
+            showToast(`var${id} = ${$gameVariables.value(id)}`, { variant: 'info', ms: 4000 });
+            return;
+        }
+        const raw = args[1];
+        const num = Number(raw);
+        const v = Number.isFinite(num) && /^-?\d+(\.\d+)?$/.test(raw) ? num : raw;
+        $gameVariables.setValue(id, v);
+        showToast(`var${id} := ${v}`, { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatMap(args) {
+        const mapId = parseInt(args[0], 10);
+        if (!Number.isFinite(mapId)) throw new Error("usage: MAP <id> [x] [y]");
+        const x = args.length > 1 ? parseInt(args[1], 10) : $gamePlayer.x;
+        const y = args.length > 2 ? parseInt(args[2], 10) : $gamePlayer.y;
+        const dir = $gamePlayer.direction();
+        $gamePlayer.reserveTransfer(mapId, x, y, dir, 0);
+        showToast(`transferring → map ${mapId} (${x}, ${y})`, { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatWatch(args) {
+        const watches = _loadWatches();
+        if (args.length >= 1 && /^clear$/i.test(args[0])) {
+            watches.length = 0;
+            _saveWatches();
+            _redrawWatchOverlay();
+            showToast("watches cleared", { variant: 'info', ms: 2000 });
+            return;
+        }
+        if (args.length < 2) throw new Error("usage: WATCH SW|VAR <id>  |  WATCH CLEAR");
+        const kindRaw = (args[0] || '').toUpperCase();
+        const kind = kindRaw === 'SW' ? 'sw' : kindRaw === 'VAR' ? 'var' : null;
+        if (!kind) throw new Error("WATCH kind must be SW or VAR");
+        const id = parseInt(args[1], 10);
+        if (!Number.isFinite(id)) throw new Error("WATCH <kind> needs a numeric id");
+        if (watches.some(w => w.kind === kind && w.id === id)) {
+            showToast(`already watching ${kind}${id}`, { variant: 'info', ms: 2000 });
+            return;
+        }
+        watches.push({ kind, id });
+        _saveWatches();
+        _ensureWatchOverlay();
+        _redrawWatchOverlay();
+    }
+
+    function _cheatItem(args) {
+        const id = parseInt(args[0], 10);
+        if (!Number.isFinite(id)) throw new Error("usage: ITEM <id> [count]");
+        const count = args.length > 1 ? parseInt(args[1], 10) : 1;
+        if (!Number.isFinite(count)) throw new Error("ITEM count must be an integer");
+        const item = $dataItems && $dataItems[id];
+        if (!item) throw new Error(`no item with id ${id}`);
+        $gameParty.gainItem(item, count);
+        showToast(`${item.name || ('item ' + id)} ${count >= 0 ? '+' : ''}${count}`,
+                  { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatLevel(args) {
+        if (args.length < 1) {
+            showToast(`TrainerLv = ${$gameSystem.TrainerLv}`, { variant: 'info', ms: 4000 });
+            return;
+        }
+        const raw = args[0];
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n)) throw new Error("usage: LVL [+N|-N|N]");
+        const before = $gameSystem.TrainerLv | 0;
+        const after = /^[+-]/.test(raw) ? before + n : n;
+        $gameSystem.TrainerLv = Math.max(1, after);
+        showToast(`TrainerLv ${before} → ${$gameSystem.TrainerLv}`,
+                  { variant: 'success', ms: 2000 });
+    }
     // #endregion
 
     // #region Event Bus
