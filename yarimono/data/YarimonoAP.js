@@ -1333,13 +1333,10 @@
     Game_Switches.prototype.setValue = function (id, value, forceNormal) {
         if (client && !forceNormal) {
             // Range that correspond to the ultimate move unlocks for each element.
-            if (id >= SWITCH_ULTIMATE_MOVE_START && id < SWITCH_ULTIMATE_MOVE_START + SWITCH_ULTIMATE_COUNT) {
-                log(`Ultimate move unlocked for element with switch ${id}, marking location as checked.`);
-                let locId = LOCATION_IDS.ULTIMATE_MOVE + id;
+            if (id >= SWITCH_ULTIMATE_MOVE_START + MOVE_TUTOR_OFFSET && id < SWITCH_ULTIMATE_MOVE_START + SWITCH_ULTIMATE_COUNT + MOVE_TUTOR_OFFSET) {
+                log(`Ultimate-move tracker switch ${id} flipped, sending check.`);
+                let locId = LOCATION_IDS.ULTIMATE_MOVE + id - MOVE_TUTOR_OFFSET;
                 client.sendLocationChecks([locId]);
-
-                // Prevent the game from actually setting the switch on, since that would unlock the move.
-                return;
             } else if (DREAM_SWITCH_SET.has(id)) {
                 log(`Dream switch ${id} turned on, marking location as checked.`);
                 let key = Object.keys(DREAM_SWITCHES).find(k => DREAM_SWITCHES[k] === id);
@@ -1723,7 +1720,12 @@
      * @param {object} spec - The patch specification.
      * @param {object} spec.target - The target of the patch, either { commonEventId } or { mapId, eventId }.
      * @param {number[]} [spec.pages] - For map events, the page indices to apply the patch to. If omitted, applies to all pages.
-     * @param {function} spec.transform - The transform function to apply to the event list. Takes (list, ctx) and returns a new list or modifies in place. Context has shape { kind: 'common', commonEventId } or { kind: 'map', mapId, eventId, pageIndex }.
+     * @param {function} spec.transform - The transform function.
+     *   Default (root: false): receives (list, ctx) — a single page's command
+     *   list. Returns a replacement array or mutates in place.
+     *   When spec.root is true: receives (event, ctx) — the whole event object
+     *   (map event or common event). Mutate it in place. Return value is
+     *   ignored.
      */
     function defineEventPatch(spec) {
         if (!spec || typeof spec.transform !== 'function') {
@@ -1744,6 +1746,7 @@
             target,
             pages: spec.pages,
             transform: spec.transform,
+            root: spec.root || false, // Transform applies to entire event rather than the individual page lists, so handler gets the whole event
         });
     }
 
@@ -1752,6 +1755,11 @@
     function _applyTransform(owner, transform, ctx) {
         const out = transform(owner.list, ctx);
         if (Array.isArray(out)) owner.list = out;
+    }
+
+    // Run a transform against the whole event (root mode). Mutate in place.
+    function _applyRootTransform(evt, transform, ctx) {
+        transform(evt, ctx);
     }
 
     /**
@@ -1764,6 +1772,12 @@
             if (patch.target.kind !== 'common') continue;
             const commonEvent = $dataCommonEvents[patch.target.commonEventId];
             if (!commonEvent) continue;
+            if (patch.root) {
+                _applyEventTransform(commonEvent, patch.transform, {
+                    kind: 'common',
+                    commonEventId: patch.target.commonEventId,
+                });
+            }
             _applyTransform(commonEvent, patch.transform, {
                 kind: 'common',
                 commonEventId: patch.target.commonEventId,
@@ -1782,6 +1796,12 @@
             if (patch.target.kind !== 'template') continue;
             const templateEvent = $dataTemplateEvents[patch.target.templateEventId];
             if (!templateEvent || !templateEvent.pages) continue;
+            if (patch.root) {
+                _applyEventTransform(templateEvent, patch.transform, {
+                    kind: 'template',
+                    templateEventId: patch.target.templateEventId,
+                });
+            }
             const pageIdxs = patch.pages || templateEvent.pages.map((_, i) => i);
             for (const pi of pageIdxs) {
                 const page = templateEvent.pages[pi];
@@ -1804,11 +1824,19 @@
         if (mapId == null || !$dataMap || !$dataMap.events) return;
         for (const patch of eventPatches) {
             if (patch.target.kind !== 'map' || patch.target.mapId !== mapId) continue;
-            const event = $dataMap.events[patch.target.eventId];
-            if (!event || !event.pages) continue;
-            const pageIdxs = patch.pages || event.pages.map((_, i) => i);
+            const mapEvent = $dataMap.events[patch.target.eventId];
+            if (!mapEvent || !mapEvent.pages) continue;
+            if (patch.root) {
+                _applyRootTransform(mapEvent, patch.transform, {
+                    kind: 'map',
+                    mapId: patch.target.mapId,
+                    eventId: patch.target.eventId,
+                });
+                continue;
+            }
+            const pageIdxs = patch.pages || mapEvent.pages.map((_, i) => i);
             for (const pi of pageIdxs) {
-                const page = event.pages[pi];
+                const page = mapEvent.pages[pi];
                 if (!page) continue;
                 _applyTransform(page, patch.transform, {
                     kind: 'map',
@@ -1829,10 +1857,22 @@
     };
 
 
+    // We use switches in the 1000-1100 range to deal with some messy switch
+    // logic for ultimate moves. We need to make sure the array is big enough
+    // that rpgmaker will accept switches with those ids.
+    const _AP_MAX_SWITCH_ID = 1100;
+    function _padSwitchArray() {
+        if (!$dataSystem || !Array.isArray($dataSystem.switches)) return;
+        while ($dataSystem.switches.length <= _AP_MAX_SWITCH_ID) {
+            $dataSystem.switches.push("");
+        }
+    }
+
     // Apply patches after loading common events or map data.
     const _DataManager_onLoad = DataManager.onLoad;
     DataManager.onLoad = function (object) {
         _DataManager_onLoad.call(this, object);
+        if (object === $dataSystem) _padSwitchArray();
         if (!client) return;
         if (object === $dataCommonEvents) {
             applyCommonEventPatches();
@@ -2287,6 +2327,85 @@
             log("Removing transfer to map 168 from M8 E11");
         }),
     });
+
+    // Ultimate-move tutor events use a "moved learned" switch for two
+    // jobs: gating their post-fight "trainer is gone" page and actually
+    // unlocking the move. Since you can unlock the move without fighting 
+    // them, we need the switch for the move to not gate the "finished battle"
+    // page or you can never fight them if you happen to get the move first.
+    const MOVE_TUTORS = [
+        { mapId: 146, eventId: 14, switchId: 44 },
+        { mapId:  77, eventId:  4, switchId: 42 },
+        { mapId:  37, eventId: 21, switchId: 48 },
+        { mapId:  44, eventId: 94, switchId: 46 },
+        { mapId:  64, eventId:  7, switchId: 47 },
+    ];
+    const MOVE_TUTOR_OFFSET = 1000;
+
+    for (const tutor of MOVE_TUTORS) {
+        const { mapId, eventId, switchId } = tutor;
+        const trackerId = switchId + MOVE_TUTOR_OFFSET;
+        // Page condition rewrite
+        defineEventPatch({
+            target: { mapId, eventId },
+            root: true,
+            transform: (evt) => {
+                for (let i = 0; i < evt.pages.length; i++) {
+                    const c = evt.pages[i] && evt.pages[i].conditions;
+                    if (!c) continue;
+                    if (c.switch1Valid && c.switch1Id === switchId) {
+                        c.switch1Id = trackerId;
+                        log(`tutor ${mapId}:${eventId} page ${i} cond1 switch ${switchId}→${trackerId}`);
+                    }
+                    if (c.switch2Valid && c.switch2Id === switchId) {
+                        c.switch2Id = trackerId;
+                        log(`tutor ${mapId}:${eventId} page ${i} cond2 switch ${switchId}→${trackerId}`);
+                    }
+                }
+            },
+        });
+        // Inline switch-flip rewrite
+        defineEventPatch({
+            target: { mapId, eventId },
+            transform: replaceMatching(
+                (cmd) => cmd.code === 121
+                      && cmd.parameters
+                      && cmd.parameters[0] === switchId
+                      && cmd.parameters[1] === switchId
+                      && cmd.parameters[2] === 0,    // 0 = ON
+                () => {
+                    log(`tutor switch ${switchId} flip redirected → ${trackerId}`);
+                    $gameSwitches.setValue(trackerId, true);
+                },
+            ),
+        });
+    }
+
+    // The remaining two ultimate moves (switches 43 and 45) don't have a
+    // trainer page-condition issue, but we still need to change their 
+    // switch flips to have the same offset as the others.
+    const MOVE_CE_TUTORS = [
+        { commonEventId: 298, switchId: 43 },
+        { commonEventId: 299, switchId: 45 },
+    ];
+    for (const grant of MOVE_CE_TUTORS) {
+        const { commonEventId, switchId } = grant;
+        const trackerId = switchId + MOVE_TUTOR_OFFSET;
+        defineEventPatch({
+            target: { commonEventId },
+            transform: replaceMatching(
+                (cmd) => cmd.code === 121
+                      && cmd.parameters
+                      && cmd.parameters[0] === switchId
+                      && cmd.parameters[1] === switchId
+                      && cmd.parameters[2] === 0,
+                () => {
+                    log(`CE${commonEventId} switch ${switchId} flip redirected → ${trackerId}`);
+                    $gameSwitches.setValue(trackerId, true);
+                },
+            ),
+        });
+    }
     // #endregion
 
 
