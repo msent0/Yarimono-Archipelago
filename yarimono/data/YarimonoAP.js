@@ -2821,6 +2821,12 @@
                 // players' item traffic isn't relevant.
                 const sender = msg.item && msg.item.player;
                 if (sender !== ourSlot || msg.receiving === ourSlot) return;
+                let itemName = client.itemName(msg.receiving, msg.item.item);
+                let recipientName = client.playerName(msg.receiving);
+                let text = `You sent ${itemName} to ${recipientName}.`;
+                log("server:", text);
+                showToast(text, { variant: 'info', ms: 6000 });
+                return;
             }
             const data = Array.isArray(msg.data) ? msg.data : [];
             const text = data.map(seg => (seg && typeof seg.text === 'string') ? seg.text : '').join('');
