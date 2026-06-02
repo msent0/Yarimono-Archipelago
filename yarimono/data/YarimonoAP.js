@@ -2576,12 +2576,21 @@
         },
     });
     
+    // Matsutake event. Part of the event involves a transfer to the secret shop (map 168), but
+    // if that transfer happens, the Wonderful Spray event can trigger while that event is happening
+    // and then everything becomes a mess. So we skip that part of the scene where the transfer happens.
     // M8 E11, remove the command 201 transfer to map 168 (second param)
+    // M8 E11, remove the comman 122 set of variable 226 (activates cutscene at secret shop on next visit)
     defineEventPatch({
         target: { mapId: 8, eventId: 11 },
-        transform: replaceMatching((cmd) => cmd.code === 201 && cmd.parameters[1] === 168, () => {
-            log("Removing transfer to map 168 from M8 E11");
-        }),
+        transform: compose(
+            replaceMatching((cmd) => cmd.code === 201 && cmd.parameters[1] === 168, () => {
+                log("Removing transfer to map 168 from M8 E11");
+            }), 
+            replaceMatching((cmd) => cmd.code === 122 && cmd.parameters[0] === 226, () => {
+                log("Removing set of variable 226 from M8 E11");
+            })
+        ),
     });
 
     // Ultimate-move tutor events use a "moved learned" switch for two
