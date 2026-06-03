@@ -2129,12 +2129,13 @@
     DataManager.onLoad = function (object) {
         _DataManager_onLoad.call(this, object);
         if (object === $dataSystem) _padSwitchArray();
-        if (!client) return;
+        if ($gameSystem && SaveStorage.isAPSave($gameSystem)) return;
         if (object === $dataCommonEvents) {
             applyCommonEventPatches();
         } else if (object === $dataMap && eventPatchLoadingMapId != null) {
             applyMapPatches(eventPatchLoadingMapId);
             applyMapAdditions(eventPatchLoadingMapId);
+            fillOrphanEventSlots(eventPatchLoadingMapId);
         }
     };
 
@@ -2868,10 +2869,48 @@
         return ev;
     }
 
-    // Inject all registered additions for the given map.
+    // If for any reason we have an event removed from the live additions
+    // but it's still referenced by a saved Game_Event on the current map,
+    // replace it with one of these dummy events that do nothing.
+    function _dummyEvent(id) {
+        return _specToEvent({
+            id, x: 0, y: 0, name: `__orphan_${id}__`,
+            pages: [{
+                priority: 'below',
+                through: true,
+            }],
+        });
+    }
+
+    /**
+     * Fill any orphaned event slots on the current map with dummy events so they don't cause errors when accessed.
+     */
+    function fillOrphanEventSlots(mapId) {
+        if (!$gameMap || $gameMap.mapId() !== mapId) return;
+        if (!$gameMap._events || !$dataMap || !$dataMap.events) return;
+        let filled = 0;
+        for (let i = 0; i < $gameMap._events.length; i++) {
+            if (!$gameMap._events[i]) continue;
+            if ($dataMap.events[i]) continue;
+            $dataMap.events[i] = _dummyEvent(i);
+            filled += 1;
+        }
+        if (filled > 0) {
+            warn(`Map ${mapId}: ${filled} orphan event slot(s) filled with dummies ` +
+                 `(saved Game_Events without addition specs)`);
+        }
+    }
+
+    /**
+     * Inject the events defined for this map into $dataMap.events and (potentially) the running game state.
+     */
     function applyMapAdditions(mapId) {
         const specs = mapAdditions.get(mapId);
         if (!specs || !$dataMap || !$dataMap.events) return;
+        // Flag that we've applied additions to this map so we don't do it again if this
+        // function is called multiple times for the same map.
+        if ($dataMap._apAdditionsApplied) return;
+        $dataMap._apAdditionsApplied = true;
         const startId = $dataMap.events.length;
         for (const spec of specs) {
             spec.id = $dataMap.events.length;  // first free slot
@@ -3356,6 +3395,7 @@
         if ($gameMap && $gameMap.mapId()) {
             applyMapPatches($gameMap.mapId());
             applyMapAdditions($gameMap.mapId());
+            fillOrphanEventSlots($gameMap.mapId());
         }
 
 
