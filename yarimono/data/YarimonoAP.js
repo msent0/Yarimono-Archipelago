@@ -21,6 +21,7 @@
         JUNK: 1084000,
         ULTIMATE_MOVE: 1085000,
         SCENE_UNLOCK: 1086000,
+        GOLD: 1087000,
     }
 
     const LOCATION_IDS = {
@@ -763,6 +764,7 @@
             else if (cmd === 'WATCH') _cheatWatch(args);
             else if (cmd === 'ITEM') _cheatItem(args);
             else if (cmd === 'LVL') _cheatLevel(args);
+            else if (cmd === 'YEN') _cheatYen(args);
             else showToast(`unknown command: ${cmd}`, { variant: 'error', ms: 4000 });
         } catch (e) {
             showToast(`error: ${e && e.message || e}`, { variant: 'error', ms: 4000 });
@@ -854,6 +856,21 @@
         const after = /^[+-]/.test(raw) ? before + n : n;
         $gameSystem.TrainerLv = Math.max(1, after);
         showToast(`TrainerLv ${before} → ${$gameSystem.TrainerLv}`,
+                  { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatYen(args) {
+        if (args.length < 1) {
+            showToast(`Yen = ${$gameParty._gold}`, { variant: 'info', ms: 4000 });
+            return;
+        }
+        const raw = args[0];
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n)) throw new Error("usage: YEN [+N|-N|N]");
+        const before = $gameParty._gold | 0;
+        const after = /^[+-]/.test(raw) ? before + n : n;
+        $gameParty._gold = Math.max(0, after);
+        showToast(`Yen ${before} → ${$gameParty._gold}`,
                   { variant: 'success', ms: 2000 });
     }
     // #endregion
@@ -3158,7 +3175,7 @@
             const switchId = itemId - ITEM_IDS.ULTIMATE_MOVE;
             log(`Unlocking ultimate move for switch ${switchId} for received item ${itemId}`);
             $gameSwitches.setValue(switchId, true, true);
-        } else if (itemId >= ITEM_IDS.SCENE_UNLOCK) {
+        } else if (itemId >= ITEM_IDS.SCENE_UNLOCK && itemId < ITEM_IDS.GOLD) {
             // Scene unlock.
             let { charNo, sceneIndex } = _itemSceneIndex(itemId) || {};
             if (charNo !== undefined && sceneIndex !== undefined) {
@@ -3172,6 +3189,11 @@
             } else {
                 warn("Received item with id in scene unlock range but location doesn't map to a known scene:", item);
             }
+        } else if (itemId >= ITEM_IDS.GOLD) {
+            // Gold/Yen. Value is itemId - ITEM_IDS.GOLD * 1000
+            const amount = (itemId - ITEM_IDS.GOLD) * 1000;
+            log(`Adding ${amount} gold to inventory for received item ${itemId}`);
+            $gameParty.gainGold(amount);
         }
     }
     // #endregion

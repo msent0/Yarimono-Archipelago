@@ -22,6 +22,7 @@ EVENT_ITEM_BASE_ID = BASE_ID + 1000
 JUNK_BASE_ID = BASE_ID + 2000
 ULTIMATE_MOVE_BASE_ID = BASE_ID + 3000
 SCENE_UNLOCK_BASE_ID = BASE_ID + 4000
+GOLD_BASE_ID = BASE_ID + 5000
 
 
 class ItemCategory(IntEnum):
@@ -30,6 +31,7 @@ class ItemCategory(IntEnum):
     ULTIMATE_MOVE = auto()
     SCENE_UNLOCK = auto()
     JUNK = auto()
+    GOLD = auto()
 
 
 @dataclass(frozen=True)
@@ -450,6 +452,12 @@ ITEMS: list[ItemDef] = [
             ItemCategory.SCENE_UNLOCK, ItemClassification.filler),
     ItemDef(SCENE_UNLOCK_BASE_ID + 712, "Extras Scene 3 (Don't worry about it)",
             ItemCategory.SCENE_UNLOCK, ItemClassification.filler),
+    
+    # --- Gold (Yen) ---
+    ItemDef(GOLD_BASE_ID + 1, "1000 Yen", ItemCategory.GOLD, ItemClassification.filler),
+    ItemDef(GOLD_BASE_ID + 2, "2000 Yen", ItemCategory.GOLD, ItemClassification.filler),
+    ItemDef(GOLD_BASE_ID + 5, "5000 Yen", ItemCategory.GOLD, ItemClassification.filler),
+    ItemDef(GOLD_BASE_ID + 10, "10000 Yen", ItemCategory.GOLD, ItemClassification.filler),
 ]
 
 # Convenience lookups
