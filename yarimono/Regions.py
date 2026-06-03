@@ -187,7 +187,7 @@ TRANSITIONS: list[Transition] = [
 
     # Wano Village & surrounding area
     Transition("Wano Mountain Cave 1F", "Keidai Road A"),
-    Transition("Cave Road", "Wano Mountain Cave 1F"),
+    Transition("Cave Road", "Wano Mountain Cave 1F", rule=CanReachLocation("Dream 2 Complete")),
     Transition("Wano Mountain Cave 1F", "Wano Mountain Cave B1F"),
     Transition("Wano Mountain Cave 1F", "Wano Mountain Cave Rest Area"),
     Transition("Keidai Road A", "Wano Village"),

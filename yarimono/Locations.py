@@ -1272,15 +1272,15 @@ STORY_CHECKPOINTS: list[LocationDef] = [
                 LocCategory.STORY_CHECKPOINT, region="Big City", rule=CanReachLocation("Defeat Leo")),
     # Chapter 3
     LocationDef(STORY_CHECKPOINT_BASE_ID + 3, "Dream 2 Complete",
-                LocCategory.STORY_CHECKPOINT, region="Harbor Town",
-                rule=(CanReachLocation("Defeat Hikari (Wano)") & CanReachLocation("Defeat Leo (Harbor)"))),
+                LocCategory.STORY_CHECKPOINT, region="Central"),
     # Chapter 4
     LocationDef(STORY_CHECKPOINT_BASE_ID + 4, "Dream 3 Complete",
-                LocCategory.STORY_CHECKPOINT, region="Central",
-                rule=CanReachLocation("Defeat Leo (Forest of Trials)")),
+                LocCategory.STORY_CHECKPOINT, region="Harbor Town",
+                rule=(CanReachLocation("Defeat Hikari (Wano)") & CanReachLocation("Defeat Leo (Harbor)"))),
     # Chapter 5
     LocationDef(STORY_CHECKPOINT_BASE_ID + 5, "Dream 4 Complete",
-                LocCategory.STORY_CHECKPOINT, region="Hajime Village"),
+                LocCategory.STORY_CHECKPOINT, region="Hajime Village",
+                rule=CanReachLocation("Defeat Leo (Forest of Trials)")),
 ]
 
 ULTIMATE_MOVES: list[LocationDef] = [
