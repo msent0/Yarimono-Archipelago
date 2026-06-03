@@ -1,7 +1,7 @@
 """Yaml options for Yarimono."""
 
 from dataclasses import dataclass
-from Options import Choice, DefaultOnToggle, PerGameCommonOptions, Range
+from Options import Choice, DefaultOnToggle, PerGameCommonOptions, Range, Toggle
 
 
 class Goal(Choice):
@@ -66,7 +66,22 @@ class EncyclopediaCheatTackleBonus(Range):
     range_start = 0
     range_end = 50
     default = 0
-
+    
+class OpponentLevelAdjustment(Range):
+    """Adjust opponent Yarimon levels in trainer fights by this amount.
+    """
+    display_name = "Enemy Trainer Level Adjustment"
+    range_start = -100
+    range_end = 100
+    default = 0
+    
+class FixedTrainerLevels(Toggle):
+    """Most trainers added in the DLC scale the level of their team based on the player's 
+    Trainer Level. This option prevents that scaling and sets all trainers to a fixed level 
+    depending on the specific trainer.
+    """
+    display_name = "Fixed Trainer Levels"
+    
 
 @dataclass
 class YarimonoOptions(PerGameCommonOptions):
@@ -75,3 +90,5 @@ class YarimonoOptions(PerGameCommonOptions):
     limited_cheat_tackle: LimitedCheatTackle
     extra_levels: ExtraLevels
     encyclopedia_ct_bonus: EncyclopediaCheatTackleBonus
+    opponent_level_adjustment: OpponentLevelAdjustment
+    fixed_trainer_levels: FixedTrainerLevels

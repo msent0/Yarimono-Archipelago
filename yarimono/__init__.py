@@ -223,9 +223,11 @@ class YarimonoWorld(World):
     # Slot data sent to the client
     def fill_slot_data(self) -> dict:
         return {
-            "goal":                       int(self.options.goal),
-            "randomize_yariman_encyclopedia":     bool(self.options.randomize_yariman_encyclopedia),
-            "limited_cheat_tackle":       int(self.options.limited_cheat_tackle),
-            "extra_levels":               int(self.options.extra_levels),
-            "encyclopedia_ct_bonus":      int(self.options.encyclopedia_ct_bonus),
+            "goal": int(self.options.goal),
+            "randomize_yariman_encyclopedia": bool(self.options.randomize_yariman_encyclopedia),
+            "limited_cheat_tackle": int(self.options.limited_cheat_tackle),
+            "extra_levels": int(self.options.extra_levels),
+            "encyclopedia_ct_bonus": int(self.options.encyclopedia_ct_bonus),
+            "opponent_level_adjustment": int(self.options.opponent_level_adjustment),
+            "fixed_trainer_levels": bool(self.options.fixed_trainer_levels),
         }

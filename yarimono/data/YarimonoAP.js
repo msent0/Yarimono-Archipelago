@@ -170,6 +170,44 @@
         { id: 214, name: 'Anna', suisyoLv: 110, trLvHikakuMinLv: 110 },
         { id: 221, name: 'Nupuryu', suisyoLv: 140, trLvHikakuMinLv: 140 }
     ]
+
+    const trainerFixedLevels = [
+        { id: 140, name: 'Hotaru', ymLevels: [110, 115], suisyoLv: 100 },
+        { id: 142, name: 'Sanae', ymLevels: [125, 100, 130], suisyoLv: 100 },
+        { id: 144, name: 'Maho', ymLevels: [100, 120], suisyoLv: 100 },
+        { id: 145, name: 'Kuina', ymLevels: [110, 110, 100], suisyoLv: 100 },
+        { id: 147, name: 'Honoka', ymLevels: [105, 105, 105], suisyoLv: 100 },
+        { id: 151, name: 'Melon', ymLevels: [110, 120, 100], suisyoLv: 100 },
+        { id: 152, name: 'Riona', ymLevels: [110, 110], suisyoLv: 100 },
+        { id: 155, name: 'Yoru and Neru ', ymLevels: [135, 135, 145], suisyoLv: 120 },
+        { id: 156, name: 'Maki', ymLevels: [120, 140, 125], suisyoLv: 110 },
+        { id: 157, name: 'Murasaki', ymLevels: [115, 115], suisyoLv: 100 },
+        { id: 163, name: 'Nene', ymLevels: [116, 116, 110], suisyoLv: 110 },
+        { id: 165, name: 'Marisa', ymLevels: [115, 134], suisyoLv: 105 },
+        { id: 167, name: 'Rumi', ymLevels: [110, 110, 110], suisyoLv: 100 },
+        { id: 173, name: 'Taiga', ymLevels: [130, 140, 145], suisyoLv: 120 },
+        { id: 174, name: 'Minako', ymLevels: [110, 110], suisyoLv: 100 },
+        { id: 182, name: 'Akira', ymLevels: [135, 140, 140], suisyoLv: 120 },
+        { id: 183, name: 'Kanako', ymLevels: [115, 115], suisyoLv: 100 },
+        { id: 193, name: 'Nanase', ymLevels: [120, 110, 130], suisyoLv: 110 },
+        { id: 200, name: 'Murei', ymLevels: [115, 112], suisyoLv: 100 },
+        { id: 201, name: 'Aya', ymLevels: [125, 130, 130], suisyoLv: 110 },
+        { id: 204, name: 'Hikari', ymLevels: [125, 125, 135], suisyoLv: 110 },
+        { id: 205, name: 'Leo', ymLevels: [122, 122, 141], suisyoLv: 110 },
+        { id: 207, name: 'Lisa', ymLevels: [115, 115, 120], suisyoLv: 110 },
+        { id: 208, name: 'Sophia', ymLevels: [114, 117, 110], suisyoLv: 110 },
+        { id: 209, name: 'Hiroko ', ymLevels: [118, 117, 110], suisyoLv: 110 },
+        { id: 210, name: 'Hibana', ymLevels: [115, 118, 120], suisyoLv: 110 },
+        { id: 211, name: 'Ero-doujin Sensei', ymLevels: [138, 138, 139], suisyoLv: 120 },
+        { id: 212, name: 'Meena', ymLevels: [114, 115, 115], suisyoLv: 110 },
+        { id: 213, name: 'Shishio', ymLevels: [117, 115, 120], suisyoLv: 110 },
+        { id: 214, name: 'Anna', ymLevels: [115, 115, 120], suisyoLv: 110 },
+        { id: 221, name: 'Nupuryu', ymLevels: [150, 150, 150], suisyoLv: 140 }
+    ]
+    const FIXED_TRAINER_LEVEL_MAP = trainerFixedLevels.reduce((acc, { id, suisyoLv, ymLevels }) => {
+        acc[id] = { suisyoLv, ymLevels };
+        return acc;
+    }, {});
     // #endregion
 
     // #region CSS 
@@ -1227,6 +1265,9 @@
                     this.events.emit("_authConnected", msg);
                     this.events.emit("connected", msg);
                     this.slot_data = msg.slot_data || null;
+                    for (const key of Object.keys(this.slot_data || {})) {
+                        log(`slot_data: ${key} =`, this.slot_data[key]);
+                    }
                     SaveStorage.set($gameSystem, 'offlineSlotData', this.slot_data);
                     this._hasConnectedOnce = true;
                     this._scoutAllPlaceholders();
@@ -3377,6 +3418,61 @@
         }
     }
     // #endregion
+
+    // #region Enemy Trainer Modifications
+    function adjustTrainerRecommendedAndMinimumLevels() {
+        // The postgame has an odd system where some trainers levels are set entirely based on the
+        // player's trainer level. We want them to have a proper recommended and minimum level. The
+        // game actually has this logic, but doesn't use it for most trainers for some reason. This
+        // adds in reasonable numbers for all of them.
+        for (const { id, suisyoLv, trLvHikakuMinLv } of trainerRecLevelAdjustments) {
+            if ($N_Yarimon_DB.trainers[id]) {
+                $N_Yarimon_DB.trainers[id].suisyoLv = suisyoLv; // Recommended level
+                $N_Yarimon_DB.trainers[id].trLvHikakuMinLv = trLvHikakuMinLv; // Minimum level
+            }
+        }
+    }
+
+    function adjustTrainerYarimonLevels() {
+        // slot_data.opponent_level_adjustment forces trainer Yarimons to be of a higher level
+        if (!client || !client.slot_data.opponent_level_adjustment) return;
+        let db = $N_Yarimon_DB;
+        for (const trainer of db.trainers) {
+            if (!trainer || !trainer.syojiTikemon) continue;
+            for (const tikemon of trainer.syojiTikemon) {
+                if (tikemon) {
+                    tikemon.lv += client.slot_data.opponent_level_adjustment || 0;
+                    if (tikemon.lv < 1) tikemon.lv = 1;
+                }
+            }
+        }
+    }
+
+    function setFixedTrainerYarimonLevels() {
+        // client.slot_data.fixed_trainer_levels disables level scaling for all trainers,
+        // setting them to fixed trainer specific levels instead.
+        if (!client || !client.slot_data.fixed_trainer_levels) return;
+        let db = $N_Yarimon_DB;
+        // The flag TrnLvSaFlg dictates if a trainer has level scaling.
+        let changed = 0
+        for (const trainer of db.trainers) {
+            let mapping = FIXED_TRAINER_LEVEL_MAP[trainer.id];
+            if (!mapping) continue;
+            if (trainer.syojiTikemon.some(ym => ym.TrnLvSaFlg === true)) {
+                trainer.suisyoLv = mapping.suisyoLv || trainer.suisyoLv;
+                changed += 1;
+            }
+            for (const [i, ym] of Object.entries(trainer.syojiTikemon)) {
+                if (ym.TrnLvSaFlg === true) {
+                    ym.TrnLvSaFlg = false;
+                    ym.lv = mapping.ymLevels[i] || ym.lv;
+                }
+            }
+        }
+        log(`Set fixed trainer levels for ${changed} trainers.`);
+    }
+
+    // #endregion
     
     // #region Game Data Initialization
     /**
@@ -3413,16 +3509,14 @@
         // already unlocked from a previous session.
         recalculateCheatTackleBonus();
 
-        // The postgame has an odd system where some trainers levels are set entirely based on the
-        // player's trainer level. We want them to have a proper recommended and minimum level. The
-        // game actually has this logic, but doesn't use it for most trainers for some reason. This
-        // adds in reasonable numbers for all of them.
-        for (const { id, suisyoLv, trLvHikakuMinLv } of trainerRecLevelAdjustments) {
-            if ($N_Yarimon_DB.trainers[id]) {
-                $N_Yarimon_DB.trainers[id].suisyoLv = suisyoLv; // Recommended level
-                $N_Yarimon_DB.trainers[id].trLvHikakuMinLv = trLvHikakuMinLv; // Minimum level
-            }
-        }
+        // Adjust trainer recommended and minimum levels.
+        adjustTrainerRecommendedAndMinimumLevels();
+
+        // Apply fixed trainer levels if that option is enabled.
+        setFixedTrainerYarimonLevels();
+
+        // Adjust trainer Yarimon levels based on slot data.
+        adjustTrainerYarimonLevels();
     }
 
     // apLocId -> NetworkItem (populated by LocationScouts response).
