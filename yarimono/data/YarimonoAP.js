@@ -765,6 +765,7 @@
             else if (cmd === 'ITEM') _cheatItem(args);
             else if (cmd === 'LVL') _cheatLevel(args);
             else if (cmd === 'YEN') _cheatYen(args);
+            else if (cmd === 'NOCLIP') _cheatNoclip(args);
             else showToast(`unknown command: ${cmd}`, { variant: 'error', ms: 4000 });
         } catch (e) {
             showToast(`error: ${e && e.message || e}`, { variant: 'error', ms: 4000 });
@@ -871,6 +872,14 @@
         const after = /^[+-]/.test(raw) ? before + n : n;
         $gameParty._gold = Math.max(0, after);
         showToast(`Yen ${before} → ${$gameParty._gold}`,
+                  { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatNoclip(args) {
+        const player = $gamePlayer;
+        if (!player) throw new Error("player object not found");
+        player._through = !player._through;
+        showToast(`noclip ${player._through ? 'enabled' : 'disabled'}`,
                   { variant: 'success', ms: 2000 });
     }
     // #endregion
