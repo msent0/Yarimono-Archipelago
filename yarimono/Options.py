@@ -81,7 +81,58 @@ class FixedTrainerLevels(Toggle):
     depending on the specific trainer.
     """
     display_name = "Fixed Trainer Levels"
+
+class RandomizeTrainerYarimon(Choice):
+    """Randomizes the Yarimon that trainers use in battle.
     
+    - off: Trainers use the same Yarimon as in vanilla.
+    - on: Trainers use random Yarimon.
+    - bst: Trainers use random Yarimon, but the replacement Yarimon will be around the same base stat total as the one it's replacing.
+    
+    """
+    display_name = "Randomize Trainer Yarimon"
+    option_off = 0
+    option_on = 1
+    option_bst = 2
+    default = option_off
+    
+class RandomizeWildYarimon(Choice):
+    """Randomizes the Yarimon that appear in the wild.
+    
+    - off: Wild encounters are the same as in vanilla.
+    - on: Wild encounter slots are randomized.
+    - bst: Wild encounter slots are randomized, but the replacement Yarimon will be around the same base stat total as the one it's replacing.
+    
+    """
+    display_name = "Randomize Wild Yarimon"
+    option_off = 0
+    option_on = 1
+    option_bst = 2
+    default = option_off
+    
+class RandomizeYarimonAbilities(Choice):
+    """Randomizes the abilities of all Yarimon.
+
+    - off: Yarimon have the same abilities as in vanilla.
+    - on: Yarimon have random abilities.
+    
+    """
+    display_name = "Randomize Yarimon Abilities"
+    option_off = 0
+    option_on = 1
+    default = option_off
+
+class RandomizeYarimonMoves(Choice):
+    """Randomizes the moves of all Yarimon.
+
+    - off: Yarimon have the same moves as in vanilla.
+    - on: Yarimon have random moves.
+    
+    """
+    display_name = "Randomize Yarimon Moves"
+    option_off = 0
+    option_on = 1
+    default = option_off
 
 @dataclass
 class YarimonoOptions(PerGameCommonOptions):
@@ -92,3 +143,7 @@ class YarimonoOptions(PerGameCommonOptions):
     encyclopedia_ct_bonus: EncyclopediaCheatTackleBonus
     opponent_level_adjustment: OpponentLevelAdjustment
     fixed_trainer_levels: FixedTrainerLevels
+    randomize_trainer_yarimon: RandomizeTrainerYarimon
+    randomize_wild_yarimon: RandomizeWildYarimon
+    randomize_yarimon_abilities: RandomizeYarimonAbilities
+    randomize_yarimon_moves: RandomizeYarimonMoves

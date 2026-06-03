@@ -209,6 +209,249 @@
         acc[id] = { suisyoLv, ymLevels };
         return acc;
     }, {});
+
+    const LEGAL_RANDOM_ABILITY = [
+        { id: 1, name: 'Moisture Barrier' },
+        { id: 2, name: 'Roots in the Earth' },
+        { id: 3, name: 'Flame of Rebirth' },
+        { id: 4, name: 'Insightful Eye' },
+        { id: 5, name: 'Soft Body' },
+        { id: 6, name: 'Electrified Body' },
+        { id: 7, name: 'Graceful Movement' },
+        { id: 8, name: 'Astral Body' },
+        { id: 9, name: 'Black Hole' },
+        { id: 10, name: 'Internal Combustion Engine' },
+        { id: 11, name: 'Evil Eye' },
+        { id: 12, name: "Demon's Secret Art" },
+        { id: 13, name: 'Sturdy Shell' },
+        { id: 14, name: 'Metal Armor' },
+        { id: 15, name: "Earth's Protection" },
+        { id: 16, name: 'Divine Power' },
+        { id: 17, name: 'Prism Wall' },
+        { id: 18, name: 'Natural Powder' },
+        { id: 19, name: 'Juice Splash' },
+        { id: 20, name: 'Brute Force' },
+        { id: 21, name: 'Cunning' },
+        { id: 22, name: 'One-shot Gag' },
+        { id: 23, name: 'Terror Face' },
+        { id: 24, name: 'Whimsical Wind' },
+        { id: 25, name: 'Solar Radiation' },
+        { id: 26, name: 'Beguiling Light' },
+        { id: 27, name: 'Fire Transfer' },
+        { id: 28, name: 'Ice Aura' },
+        { id: 29, name: 'Pulse Radar' },
+        { id: 30, name: 'Patchwork' },
+        { id: 31, name: 'Sharp Blade' },
+        { id: 32, name: 'Element' },
+        { id: 33, name: 'Steel Soul' },
+        { id: 43, name: 'Tighten Helmet' },
+        { id: 44, name: 'Decay' },
+        { id: 45, name: 'Glider' },
+        { id: 46, name: 'Gaia Armor' },
+        { id: 47, name: 'Aqua Cloak' },
+        { id: 48, name: 'Necroforce' },
+        { id: 49, name: 'One More Time' },
+        { id: 50, name: 'Electric Drive' },
+        { id: 51, name: 'Dark Aura' },
+        { id: 52, name: 'Proficiency' },
+        { id: 53, name: 'Heat-resistant Armor' },
+        { id: 54, name: 'Regenerating Body' },
+        { id: 55, name: 'Nutrient Extraction' },
+        { id: 56, name: 'Lovely Body' },
+        { id: 57, name: 'Raibow-colored Body' },
+    ]
+    const LEGAL_RANDOM_ABILITY_IDS = new Set(LEGAL_RANDOM_ABILITY.map(a => a.id));
+
+    const LEGAL_RANDOM_MOVE = [
+        { id: 1, name: 'Claw Slash', type: '無', power: 45, accuracy: 100, cooldown: 1 },
+        { id: 2, name: 'Bite', type: '無', power: 40, accuracy: 100, cooldown: 1 },
+        { id: 3, name: 'Leg Kick', type: '無', power: 35, accuracy: 100, cooldown: 1 },
+        { id: 4, name: 'Quick Headbutt', type: '無', power: 40, accuracy: 100, cooldown: 1 },
+        { id: 5, name: 'Cross Slash', type: '無', power: 30, accuracy: 100, cooldown: 2 },
+        { id: 6, name: 'Tail Whip', type: '無', power: 65, accuracy: 95, cooldown: 2 },
+        { id: 7, name: 'Heavy Press', type: '無', power: 70, accuracy: 100, cooldown: 2 },
+        { id: 8, name: 'Full Charge', type: '無', power: 110, accuracy: 90, cooldown: 2 },
+        { id: 9, name: 'Smash', type: '無', power: 80, accuracy: 100, cooldown: 1 },
+        { id: 10, name: 'Tyrant Blow', type: '無', power: 125, accuracy: 75, cooldown: 2 },
+        { id: 11, name: 'Diving Kick', type: '無', power: 100, accuracy: 85, cooldown: 2 },
+        { id: 12, name: 'Triple Hit', type: '無', power: 45, accuracy: 85, cooldown: 3 },
+        { id: 13, name: 'Dimension Cannon', type: '無', power: 150, accuracy: 90, cooldown: 5 },
+        { id: 14, name: 'Flawless Advance', type: '無', power: 120, accuracy: 100, cooldown: 5 },
+        { id: 15, name: 'Aura Blast', type: '無', power: 90, accuracy: 100, cooldown: 3 },
+        { id: 16, name: 'Overpower', type: '無', power: 150, accuracy: 100, cooldown: 2 },
+        { id: 19, name: 'Burning Breath', type: '火', power: 40, accuracy: 100, cooldown: 1 },
+        { id: 20, name: 'Flame Sphere', type: '火', power: 60, accuracy: 100, cooldown: 2 },
+        { id: 21, name: 'Scorching Breath', type: '火', power: 80, accuracy: 100, cooldown: 3 },
+        { id: 22, name: 'Heat Slash', type: '火', power: 90, accuracy: 95, cooldown: 2 },
+        { id: 23, name: 'Flame Circle', type: '火', power: 20, accuracy: 90, cooldown: 3 },
+        { id: 24, name: 'Magma Blast', type: '火', power: 110, accuracy: 85, cooldown: 4 },
+        { id: 25, name: 'Flare Impact', type: '火', power: 140, accuracy: 90, cooldown: 4 },
+        { id: 26, name: 'Phantom Flame', type: '火', power: 60, accuracy: 100, cooldown: 3 },
+        { id: 27, name: 'Prominence', type: '火', power: 95, accuracy: 100, cooldown: 5 },
+        { id: 28, name: 'Spark Flame', type: '火', power: 80, accuracy: 100, cooldown: 3 },
+        { id: 29, name: 'Blazing Passion', type: '火', power: 120, accuracy: 100, cooldown: 4 },
+        { id: 30, name: 'Firewind', type: '火', power: 85, accuracy: 95, cooldown: 1 },
+        { id: 31, name: 'Maximum Burn', type: '火', power: 150, accuracy: 100, cooldown: 2 },
+        { id: 32, name: 'Douse', type: '水', power: 55, accuracy: 100, cooldown: 1 },
+        { id: 33, name: 'Splash', type: '水', power: 75, accuracy: 100, cooldown: 3 },
+        { id: 34, name: 'Water Pressure Laser', type: '水', power: 90, accuracy: 100, cooldown: 2 },
+        { id: 35, name: 'Big Wave', type: '水', power: 110, accuracy: 80, cooldown: 2 },
+        { id: 36, name: 'High-Temperature Steam', type: '水', power: 80, accuracy: 90, cooldown: 3 },
+        { id: 37, name: 'Overflowing Muddy Water', type: '水', power: 75, accuracy: 90, cooldown: 2 },
+        { id: 38, name: 'Frost Formation', type: '水', power: 40, accuracy: 100, cooldown: 2 },
+        { id: 39, name: 'Sleet Drop', type: '水', power: 20, accuracy: 100, cooldown: 1 },
+        { id: 40, name: 'Freezing Ray', type: '水', power: 90, accuracy: 100, cooldown: 2 },
+        { id: 41, name: 'Blizzard', type: '水', power: 120, accuracy: 70, cooldown: 3 },
+        { id: 42, name: 'Great Avalanche', type: '水', power: 110, accuracy: 85, cooldown: 5 },
+        { id: 43, name: 'Mirror Strike', type: '水', power: 120, accuracy: 100, cooldown: 4 },
+        { id: 44, name: 'Great Tsunami', type: '水', power: 95, accuracy: 90, cooldown: 5 },
+        { id: 45, name: 'Angel Kiss', type: '水', power: 90, accuracy: 100, cooldown: 3 },
+        { id: 46, name: 'Hyper Toxic Liquid', type: '水', power: 20, accuracy: 90, cooldown: 8 },
+        { id: 48, name: 'Tailwind Tackle', type: '風', power: 30, accuracy: 100, cooldown: 2 },
+        { id: 49, name: 'Wing Cutter', type: '風', power: 60, accuracy: 95, cooldown: 1 },
+        { id: 50, name: 'Whirlwind', type: '風', power: 90, accuracy: 100, cooldown: 2 },
+        { id: 53, name: 'Bubble', type: '水', power: 35, accuracy: 100, cooldown: 1 },
+        { id: 54, name: 'Typhoon', type: '風', power: 110, accuracy: 70, cooldown: 2 },
+        { id: 55, name: 'Storm Hazard', type: '風', power: 75, accuracy: 100, cooldown: 3 },
+        { id: 56, name: 'Vacuum Slash', type: '風', power: 80, accuracy: 100, cooldown: 3 },
+        { id: 57, name: 'Flower Storm', type: '風', power: 55, accuracy: 100, cooldown: 2 },
+        { id: 58, name: 'Aroma Blast', type: '風', power: 85, accuracy: 100, cooldown: 2 },
+        { id: 59, name: 'Strange Soundwave', type: '風', power: 60, accuracy: 100, cooldown: 3 },
+        { id: 60, name: 'Sonic Howl', type: '風', power: 140, accuracy: 100, cooldown: 3 },
+        { id: 61, name: "Nature's Allure", type: '風', power: 120, accuracy: 100, cooldown: 4 },
+        { id: 62, name: 'Mischievous Wind', type: '風', power: 80, accuracy: 100, cooldown: 3 },
+        { id: 63, name: 'Air Bullet', type: '風', power: 90, accuracy: 100, cooldown: 1 },
+        { id: 64, name: 'All-Swallowing Drain', type: '風', power: 80, accuracy: 100, cooldown: 4 },
+        { id: 67, name: 'Mud Splash', type: '土', power: 35, accuracy: 100, cooldown: 1 },
+        { id: 68, name: 'Rock Throw', type: '土', power: 60, accuracy: 100, cooldown: 1 },
+        { id: 69, name: 'Ground Smash', type: '土', power: 90, accuracy: 100, cooldown: 2 },
+        { id: 70, name: 'Landslide', type: '土', power: 20, accuracy: 80, cooldown: 3 },
+        { id: 71, name: 'Needle Rock', type: '土', power: 110, accuracy: 80, cooldown: 2 },
+        { id: 72, name: 'Earthquake', type: '土', power: 100, accuracy: 100, cooldown: 3 },
+        { id: 73, name: 'Earthen Punch', type: '土', power: 130, accuracy: 90, cooldown: 1 },
+        { id: 74, name: 'Meteor', type: '土', power: 140, accuracy: 95, cooldown: 2 },
+        { id: 75, name: 'Seed Gun', type: '土', power: 40, accuracy: 100, cooldown: 1 },
+        { id: 76, name: 'Thorn Whip', type: '土', power: 30, accuracy: 100, cooldown: 1 },
+        { id: 77, name: 'Vine Entangle', type: '土', power: 50, accuracy: 90, cooldown: 2 },
+        { id: 78, name: 'Needle Rose', type: '土', power: 90, accuracy: 95, cooldown: 0 },
+        { id: 79, name: 'Thousand Branches', type: '土', power: 25, accuracy: 75, cooldown: 2 },
+        { id: 80, name: 'Spore Shower', type: '土', power: 60, accuracy: 100, cooldown: 2 },
+        { id: 81, name: 'Crystal Rain', type: '土', power: 20, accuracy: 100, cooldown: 0 },
+        { id: 82, name: 'Realm Shaker', type: '土', power: 100, accuracy: 100, cooldown: 3 },
+        { id: 83, name: 'Gaia Lancer', type: '土', power: 80, accuracy: 100, cooldown: 2 },
+        { id: 84, name: 'Mega Earthquake', type: '土', power: 120, accuracy: 100, cooldown: 6 },
+        { id: 87, name: 'Zap', type: '光', power: 40, accuracy: 100, cooldown: 1 },
+        { id: 88, name: 'Electric Bolt', type: '光', power: 60, accuracy: 100, cooldown: 1 },
+        { id: 89, name: 'Spark Laser', type: '光', power: 90, accuracy: 100, cooldown: 2 },
+        { id: 90, name: 'Lightning Speed', type: '光', power: 50, accuracy: 90, cooldown: 2 },
+        { id: 91, name: 'Bolt Blaster', type: '光', power: 110, accuracy: 70, cooldown: 1 },
+        { id: 92, name: 'Lightsaber', type: '光', power: 75, accuracy: 100, cooldown: 0 },
+        { id: 93, name: 'Shining', type: '光', power: 60, accuracy: 100, cooldown: 1 },
+        { id: 94, name: 'Moonlight', type: '光', power: 60, accuracy: 100, cooldown: 5 },
+        { id: 95, name: 'Prism Rush', type: '光', power: 25, accuracy: 100, cooldown: 2 },
+        { id: 96, name: 'Thunder Jammer', type: '光', power: 80, accuracy: 90, cooldown: 3 },
+        { id: 97, name: 'Radiating Fist', type: '光', power: 95, accuracy: 100, cooldown: 2 },
+        { id: 98, name: 'Justice Strike', type: '光', power: 120, accuracy: 100, cooldown: 5 },
+        { id: 99, name: 'Auroral Shine', type: '光', power: 80, accuracy: 100, cooldown: 2 },
+        { id: 100, name: 'Light Flash', type: '光', power: 120, accuracy: 100, cooldown: 3 },
+        { id: 101, name: 'Prism Burst', type: '光', power: 25, accuracy: 90, cooldown: 4 },
+        { id: 105, name: 'Grudge Song', type: '闇', power: 40, accuracy: 100, cooldown: 1 },
+        { id: 106, name: 'Ambush', type: '闇', power: 50, accuracy: 100, cooldown: 2 },
+        { id: 107, name: 'Tear Apart', type: '闇', power: 80, accuracy: 100, cooldown: 1 },
+        { id: 108, name: 'Shadow Edge', type: '闇', power: 90, accuracy: 90, cooldown: 2 },
+        { id: 109, name: 'Curse Burn', type: '闇', power: 80, accuracy: 90, cooldown: 1 },
+        { id: 110, name: 'Merciless Iron Fist', type: '闇', power: 130, accuracy: 80, cooldown: 3 },
+        { id: 111, name: 'Soul Drain', type: '闇', power: 70, accuracy: 100, cooldown: 2 },
+        { id: 112, name: 'Darkness Fang', type: '闇', power: 120, accuracy: 85, cooldown: 2 },
+        { id: 113, name: 'Chaos Spiral', type: '闇', power: 120, accuracy: 80, cooldown: 2 },
+        { id: 114, name: 'Dread End', type: '闇', power: 130, accuracy: 80, cooldown: 2 },
+        { id: 115, name: 'Lamenting Spite', type: '闇', power: 50, accuracy: 100, cooldown: 4 },
+        { id: 116, name: 'Double-edged Blow', type: '闇', power: 90, accuracy: 100, cooldown: 2 },
+        { id: 117, name: 'Great Life Devourer', type: '闇', power: 100, accuracy: 100, cooldown: 2 },
+        { id: 123, name: 'War Cry', type: '無', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 124, name: 'Great Fury', type: '火', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 125, name: 'Intimidating Voice', type: '無', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 126, name: 'Sorcery Vortex', type: '闇', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 127, name: 'Love Pulse', type: '光', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 129, name: 'Coating', type: '土', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 130, name: 'Aura Enhancement', type: '光', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 131, name: 'Aromatic Scent', type: '風', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 133, name: 'Perturbing Move', type: '無', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 136, name: 'Quick Step', type: '無', power: 0, accuracy: 100, cooldown: 0 },
+        { id: 137, name: 'Quick Move', type: '風', power: 0, accuracy: 100, cooldown: 0 },
+        { id: 138, name: 'Cling', type: '水', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 139, name: 'Foothold Collapse', type: '土', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 142, name: 'Parry', type: '無', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 143, name: 'Perfect Guard', type: '土', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 144, name: 'Willow Wind', type: '風', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 145, name: 'Soul Shield', type: '無', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 147, name: 'Life Energy', type: '土', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 148, name: 'Body Regen', type: '闇', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 152, name: 'Dodge Roll', type: '風', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 153, name: 'Zen Mind', type: '水', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 156, name: 'Dazzle', type: '光', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 157, name: 'Dark Realm', type: '闇', power: 0, accuracy: 100, cooldown: 2 },
+        { id: 158, name: 'Sand Dust', type: '土', power: 0, accuracy: 100, cooldown: 1 },
+        { id: 160, name: 'Instant Freeze', type: '水', power: 0, accuracy: 80, cooldown: 1 },
+        { id: 161, name: 'Bizarre Joke', type: '無', power: 0, accuracy: 70, cooldown: 1 },
+        { id: 164, name: 'Pyrokinesis', type: '火', power: 0, accuracy: 90, cooldown: 1 },
+        { id: 165, name: 'Flower Oil', type: '風', power: 0, accuracy: 75, cooldown: 1 },
+        { id: 166, name: 'Dust Ignition', type: '土', power: 0, accuracy: 80, cooldown: 1 },
+        { id: 168, name: 'Muddy Underfoot', type: '土', power: 0, accuracy: 80, cooldown: 1 },
+        { id: 169, name: 'Wetland Field', type: '水', power: 0, accuracy: 70, cooldown: 1 },
+        { id: 172, name: 'Vortex', type: '風', power: 0, accuracy: 90, cooldown: 1 },
+        { id: 173, name: 'Old Scar Incision', type: '闇', power: 0, accuracy: 75, cooldown: 1 },
+        { id: 176, name: 'Leak Zap', type: '光', power: 0, accuracy: 90, cooldown: 1 },
+        { id: 177, name: 'Stopping Short', type: '無', power: 0, accuracy: 80, cooldown: 1 },
+        { id: 180, name: 'Vile Haunting', type: '闇', power: 0, accuracy: 80, cooldown: 1 },
+        { id: 181, name: 'Wicked Flickering', type: '火', power: 0, accuracy: 70, cooldown: 1 },
+        { id: 192, name: 'Mowing Down - Strong', type: '無', power: 80, accuracy: 100, cooldown: 3 },
+        { id: 193, name: 'Purple Lightning - Triple Thrust', type: '光', power: 30, accuracy: 95, cooldown: 3 },
+        { id: 194, name: 'Prosthetic - Rapid Repair', type: '無', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 196, name: 'Gospel of Heaven - Salvation', type: '無', power: 100, accuracy: 100, cooldown: 3 },
+        { id: 197, name: 'Gravity Black Sphere - Collapse', type: '闇', power: 100, accuracy: 100, cooldown: 0 },
+        { id: 198, name: 'Mowing Down - Karma', type: '無', power: 100, accuracy: 100, cooldown: 1 },
+        { id: 200, name: 'Charging Power', type: '無', power: 0, accuracy: 100, cooldown: 3 },
+        { id: 201, name: 'Prosthetic: Defense', type: '無', power: 0, accuracy: 100, cooldown: 60 },
+    ]
+    const LEGAL_RANDOM_MOVE_MAP = LEGAL_RANDOM_MOVE.reduce((acc, move) => {
+        acc[move.id] = move;
+        return acc;
+    }, {});
+    const LEGAL_ATTACKING_MOVES = LEGAL_RANDOM_MOVE.filter(m => m.power > 0).map(m => m.id);
+
+    const RANDOMIZABLE_TRAINER_IDS = new Set([
+        2, 34, 63, 86, 90, 3, 13, 4, 36, 5, 35, 41, 56, 12, 47, 
+        6, 7, 8, 9, 57, 67, 27, 26, 28, 20, 22, 72, 71, 109, 39, 
+        14, 122, 10, 11, 15, 65, 106, 127, 16, 18, 30, 19, 50, 62, 
+        112, 58, 59, 85, 60, 113, 120, 37, 44, 70, 74, 75, 76, 49, 
+        29, 31, 32, 78, 87, 61, 73, 21, 48, 24, 23, 25, 110, 108, 
+        123, 88, 128, 84, 38, 51, 52, 53, 124, 54, 68, 69, 105, 
+        40, 42, 126, 55, 17, 89, 43, 104, 125, 132, 64, 45, 46, 
+        77, 140, 142, 144, 145, 147, 151, 152, 155, 156, 157, 163, 
+        165, 167, 173, 174, 182, 183, 193, 200, 201, 204, 205, 207, 
+        208, 209, 210, 211, 212, 213, 214, 221
+    ]);
+
+    const LEGAL_RANDOM_YARIMON = new Set([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
+        18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 
+        33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 
+        48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 
+        63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 
+        78, 79, 80, 81, 82, 83, 85, 85, 86, 87, 88, 89, 90, 91, 92, 
+        93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 
+        106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 
+        119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 
+        131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 
+        143, 144, 145, 146, 147, 148, 149, 150, 153, 154, 183, 184, 
+        185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 
+        197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208,
+        209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 
+        221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232
+    ]);
+
+    const RANDOM_MOVE_ABILITY_SKIP_YARIMON_IDS = new Set([159, 160, 169, 177, 178, 179]);
     // #endregion
 
     // #region CSS 
@@ -558,6 +801,7 @@
 
     
     function makeRng(seed) {
+        if (typeof seed === 'string') seed = cyrb53(seed);
         let s = (seed | 0) >>> 0;
         return function () {
             s = (s + 0x6D2B79F5) >>> 0;
@@ -573,6 +817,27 @@
         return networkItem
             ? client.itemName(networkItem.player, networkItem.item)
             : `AP Item at ${locId}`;
+    }
+
+    function getRandomArrayElement(arr, rng) {
+        if (!arr || arr.length === 0) return null;
+        const idx = Math.floor(rng() * arr.length);
+        return arr[idx];
+    }
+
+    const cyrb53 = (str, seed = 0) => {
+        let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+        for(let i = 0, ch; i < str.length; i++) {
+            ch = str.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 2654435761);
+            h2 = Math.imul(h2 ^ ch, 1597334677);
+        }
+        h1  = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+        h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+        h2  = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+        h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    
+        return 4294967296 * (2097151 & h2) + (h1 >>> 0);
     }
     // #endregion
 
@@ -766,6 +1031,7 @@
             else if (cmd === 'LVL') _cheatLevel(args);
             else if (cmd === 'YEN') _cheatYen(args);
             else if (cmd === 'NOCLIP') _cheatNoclip(args);
+            else if (cmd === 'DUMP') _cheatDump(args);
             else showToast(`unknown command: ${cmd}`, { variant: 'error', ms: 4000 });
         } catch (e) {
             showToast(`error: ${e && e.message || e}`, { variant: 'error', ms: 4000 });
@@ -881,6 +1147,25 @@
         player._through = !player._through;
         showToast(`noclip ${player._through ? 'enabled' : 'disabled'}`,
                   { variant: 'success', ms: 2000 });
+    }
+
+    function _cheatDump(args) {
+        // Dump a given object as json to a file. Usage: DUMP <globalPath> (e.g. DUMP $gameSystem)
+        if (args.length < 1) throw new Error("usage: DUMP <globalPath>");
+        const path = args[0];
+        let obj;
+        try { obj = eval(path); } catch (e) { throw new Error(`error evaluating path: ${e && e.message || e}`); }
+        if (typeof obj === 'undefined') throw new Error("evaluated to undefined");
+        const json = JSON.stringify(obj, null, 2);
+        const fs = require('fs');
+        const filename = `dump_${path.replace(/[^a-z0-9]+/gi, '_')}_${Date.now()}.json`;
+        fs.writeFile(filename, json, (err) => {
+            if (err) {
+                showToast(`error writing file: ${err && err.message || err}`, { variant: 'error', ms: 4000 });
+            } else {
+                showToast(`dumped ${path} to ${filename}`, { variant: 'success', ms: 4000 });
+            }
+        });
     }
     // #endregion
 
@@ -3502,6 +3787,321 @@
         }
         log(`Set fixed trainer levels for ${changed} trainers.`);
     }
+    // #endregion
+
+    // #region Yarimon Randomization
+    /**
+     * Lookup helpers for Yarimon DB entries.
+     *   byId               Map<id, ym>
+     *   prevEvo            Map<id, prevId>
+     *   nextEvo            Map<id, nextId>
+     *   exToNormal         Map<exId, normalId>
+     *   normalToEx         Map<normalId, exId>
+     *   baseFormPool       ym[] - base forms only
+     *   legalBaseFormPool  ym[] - base forms that occur normally (not used only for enemies, Chikepu, etc.)
+     */
+    let _yarimonRandHelpers = null;
+    function getYarimonDBEntryHelpers() {
+        if (_yarimonRandHelpers) return _yarimonRandHelpers;
+        const db = $N_Yarimon_DB;
+        const byId = new Map();
+        const incoming = new Set();
+        const nameToYm = new Map();
+        for (const ym of db.mZukanDatas) {
+            byId.set(ym.id, ym);
+            if (ym.name) nameToYm.set(ym.name, ym);
+            // sinka_lv 0 means no evolution
+            if (ym.sinka_id && ym.sinka_lv) incoming.add(ym.sinka_id);
+        }
+        const prevEvo = new Map();
+        for (const ym of db.mZukanDatas) {
+            if (ym.sinka_id && ym.sinka_lv) prevEvo.set(ym.sinka_id, ym.id);
+        }
+        // Special case: 152 -> 155 -> 171. This is the Chikepu line which evolves via story events so has no sinka_id/sinka_lv.
+        prevEvo.set(155, 152);
+        prevEvo.set(171, 155);
+
+        const nextEvo = new Map();
+        for (const [childId, parentId] of prevEvo.entries()) {
+            nextEvo.set(parentId, childId);
+        }
+
+        const exToNormal = new Map();
+        const normalToEx = new Map();
+        for (const ym of db.mZukanDatas) {
+            if (ym.name && ym.name.endsWith('EX')) {
+                const normal = nameToYm.get(ym.name.slice(0, -2).trim());
+                if (normal) {
+                    exToNormal.set(ym.id, normal.id);
+                    normalToEx.set(normal.id, ym.id);
+                }
+            }
+        }
+        const baseFormPool = db.mZukanDatas.filter(
+            ym => !incoming.has(ym.id) && !exToNormal.has(ym.id));
+        const legalBaseFormPool = baseFormPool.filter(ym => LEGAL_RANDOM_YARIMON.has(ym.id))
+        _yarimonRandHelpers = { byId, prevEvo, nextEvo, exToNormal, normalToEx, baseFormPool, legalBaseFormPool };
+        return _yarimonRandHelpers;
+    }
+
+    function getYarimonLevelForTrainer(tikemon, trainer) {
+        let level = tikemon.lv;
+        if (tikemon.TrnLvSaFlg) {
+            level += trainer.suisyoLv;
+        }
+        return level;
+    }
+
+    function getMovesForYarimonOfLevel(ym, level) {
+        // Last 4 learnset entries with lv <= the given level.
+        let moves = [];
+        if (!ym || !ym.wazaList) return moves;
+        for (const learn of ym.wazaList) {
+            if (learn.lv <= level) moves.push(learn.id);
+        }
+        return moves.slice(-4);
+    }
+
+    function getYarimonFormForLevel(ym, level) {
+        if (!ym) return null;
+        const { byId } = getYarimonDBEntryHelpers();
+        let current = ym;
+        while (current.sinka_id && current.sinka_lv && current.sinka_lv <= level) {
+            const next = byId.get(current.sinka_id);
+            if (!next) break;
+            current = next;
+        }
+        return current;
+    }
+
+    function _baseFormOf(ym) {
+        const { byId, prevEvo } = getYarimonDBEntryHelpers();
+        let cur = ym;
+        while (cur && prevEvo.has(cur.id)) {
+            const prev = byId.get(prevEvo.get(cur.id));
+            if (!prev) break;
+            cur = prev;
+        }
+        return cur;
+    }
+
+    /** Base stat total (hp + atk + def + agi). */
+    function yarimonBst(ym) {
+        const s = ym && ym.state;
+        return s ? (s.hp || 0) + (s.atk || 0) + (s.def || 0) + (s.agi || 0) : 0;
+    }
+
+    /**
+     * Filter basePool to those whose form for the given level has
+     * BST within range of referenceYm's BST.
+     * Falls back to basePool if the filter would yield empty.
+     */
+    function filterBasesByEvolvedBst(basePool, level, referenceYm, range) {
+        const ref = yarimonBst(referenceYm);
+        const filtered = basePool.filter(base => {
+            const evo = getYarimonFormForLevel(base, level);
+            return Math.abs(yarimonBst(evo) - ref) <= range;
+        });
+        return filtered.length ? filtered : basePool;
+    }
+
+    /**
+     * Rewrite a trainer's Yarimon's btlWazas to match ym's learnset at the
+     * slot's level.
+     */
+    function _setTrainerMovesToLearnset(tikemon, ym, trainer) {
+        if (!tikemon || !tikemon.btlWazas) return;
+        let level = getYarimonLevelForTrainer(tikemon, trainer);
+        const moves = getMovesForYarimonOfLevel(ym, level);
+        tikemon.btlWazas = moves.map((move, i) => ({
+            id: move,
+            yusendo: 5,
+        }));
+    }
+
+    function randomizeYarimonAbilities() {
+        // Randomize abilities. If a Yarimon has a randomizable ability and evolves, 
+        // its evolution will get the same new ability if it shared an ability with
+        // its pre-evolution, otherwise it will get a new random ability.
+        if (!client || !client.slot_data.randomize_yarimon_abilities) return;
+        let seed = SaveStorage.get($gameSystem, 'seed')
+        const rng = makeRng(seed + 'abilities');
+        const db = $N_Yarimon_DB;
+        const { byId, nextEvo } = getYarimonDBEntryHelpers();
+        let count = 0;
+
+        function walkAbility(ym, origAbility, newAbility) {
+            if (!ym) return;
+            if (RANDOM_MOVE_ABILITY_SKIP_YARIMON_IDS.has(ym.id)) return;
+            if (!ym._origTokuseiId && LEGAL_RANDOM_ABILITY_IDS.has(ym.tokuseiId) && ym.tokuseiId === origAbility) {
+                if (!newAbility) {
+                    newAbility = getRandomArrayElement(LEGAL_RANDOM_ABILITY, rng).id;
+                }
+                ym._origTokuseiId = ym.tokuseiId;
+                ym.tokuseiId = newAbility;
+                count += 1;
+            }
+            let next = nextEvo.get(ym.id);
+            if (next) {
+                const evoYm = byId.get(next);
+                if (evoYm) walkAbility(evoYm, ym._origTokuseiId || origAbility, newAbility);
+            }
+        }
+
+        for (const ym of db.mZukanDatas) {
+            walkAbility(ym, ym.tokuseiId, null);
+        }
+        log(`Randomized abilities for ${count} Yarimon.`);
+    }
+
+    function randomizeYarimonMoves() {
+        // Randomize learnset moves. For Yarimon that evolve, we create
+        // a mapping of old move id to new move id for each line so that 
+        // evolutions that share a move will get the same new move.
+        if (!client || !client.slot_data.randomize_yarimon_moves) return;
+        let seed = SaveStorage.get($gameSystem, 'seed')
+        const rng = makeRng(seed + 'moves');
+        const db = $N_Yarimon_DB;
+        const { byId, nextEvo, baseFormPool } = getYarimonDBEntryHelpers();
+        let count = 0;
+
+        function walkLine(ym, mapping) {
+            if (!ym || !ym.wazaList) return;
+            if (RANDOM_MOVE_ABILITY_SKIP_YARIMON_IDS.has(ym.id)) return;
+            for (const [i, learn] of Object.entries(ym.wazaList)) {
+                if (learn._origId !== undefined) continue;
+                if (mapping[learn.id] !== undefined) {
+                    learn._origId = learn.id;
+                    learn.id = mapping[learn.id];
+                    count += 1;
+                } else if (learn.id in LEGAL_RANDOM_MOVE_MAP) {
+                    // The first move should always be one that can actually deal damage. Otherwise can probably softlock.
+                    const newMoveId = getRandomArrayElement(i === 0 ? LEGAL_ATTACKING_MOVES : LEGAL_RANDOM_MOVE, rng).id;
+                    mapping[learn.id] = newMoveId;
+                    learn._origId = learn.id;
+                    learn.id = newMoveId;
+                    count += 1;
+                }
+            }
+            let next = nextEvo.get(ym.id);
+            if (next) {
+                const evoYm = byId.get(next);
+                if (evoYm) walkLine(evoYm, mapping);
+            }
+        }
+
+        for (const baseYm of baseFormPool) walkLine(baseYm, {});
+
+        // Since trainer moves are fixed to specific moves, we need
+        // to give all trainers a new valid moveset based on the new learnset.
+        for (const trainer of db.trainers) {
+            if (!trainer || !trainer.syojiTikemon) continue;
+            for (const tikemon of trainer.syojiTikemon) {
+                if (!RANDOMIZABLE_TRAINER_IDS.has(trainer.id)) continue; 
+                if (!tikemon) continue;
+                _setTrainerMovesToLearnset(tikemon, byId.get(tikemon.id), trainer);
+            }
+        }
+
+        log(`Randomized moves for ${count} learnset entries.`);
+    }
+
+    function randomizeTrainerYarimon() {
+        // For each trainer, replace each Yarimon slot with a randomly picked
+        // base-form yarimon evolved forward to the slot's level. 
+        // Trainers sharing a non-empty name share a per-line mapping so refights
+        // reuse the same replacement species (or its evolved form).
+        // EX forms are matched as their non-EX counterpart, then made EX again
+        // if possible.
+        // randomize_trainer_yarimon: 0=off, 1=on, 2=bst
+        const mode = client && client.slot_data && client.slot_data.randomize_trainer_yarimon;
+        if (!mode) return;
+        const bstMode = mode === 2;
+        let seed = SaveStorage.get($gameSystem, 'seed')
+        const rng = makeRng(seed + 'trainer');
+        const db = $N_Yarimon_DB;
+        const { byId, exToNormal, normalToEx, legalBaseFormPool } = getYarimonDBEntryHelpers();
+        const seenByGroup = {};
+        let count = 0;
+
+        for (const trainer of db.trainers) {
+            if (!trainer || !trainer.syojiTikemon) continue;
+            if (!RANDOMIZABLE_TRAINER_IDS.has(trainer.id)) continue;
+
+            const groupKey = trainer.name ? `name:${trainer.name}` : `id:${trainer.id}`;
+            if (!seenByGroup[groupKey]) seenByGroup[groupKey] = {};
+            const groupMap = seenByGroup[groupKey];
+
+            for (const tikemon of trainer.syojiTikemon) {
+                if (!tikemon) continue;
+                const origYm = byId.get(tikemon.id);
+                if (!origYm) continue;
+
+                const isEx = exToNormal.has(tikemon.id);
+                const origNormalId = isEx ? exToNormal.get(tikemon.id) : tikemon.id;
+                const origNormalYm = byId.get(origNormalId);
+                const origBaseYm = _baseFormOf(origNormalYm);
+                if (!origBaseYm) continue;
+
+                const level = getYarimonLevelForTrainer(tikemon, trainer);
+
+                let newBaseId = groupMap[origBaseYm.id];
+                if (newBaseId === undefined) {
+                    const pool = bstMode
+                        ? filterBasesByEvolvedBst(legalBaseFormPool, level, origNormalYm, 50)
+                        : legalBaseFormPool;
+                    newBaseId = getRandomArrayElement(pool, rng).id;
+                    groupMap[origBaseYm.id] = newBaseId;
+                }
+                let finalYm = getYarimonFormForLevel(byId.get(newBaseId), level);
+                if (isEx && normalToEx.has(finalYm.id)) {
+                    finalYm = byId.get(normalToEx.get(finalYm.id));
+                }
+                tikemon.id = finalYm.id;
+                _setTrainerMovesToLearnset(tikemon, finalYm, trainer);
+                count += 1;
+            }
+        }
+
+        log(`Randomized ${count} trainer Yarimon slots across ${Object.keys(seenByGroup).length} groups.`);
+    }
+
+    function randomizeWildYarimon() {
+        // randomize_wild_yarimon: 0=off, 1=on, 2=bst
+        const mode = client && client.slot_data && client.slot_data.randomize_wild_yarimon;
+        if (!mode) return;
+        const bstMode = mode === 2;
+        let seed = SaveStorage.get($gameSystem, 'seed')
+        const rng = makeRng(seed + 'wild');
+        const db = $N_Yarimon_DB;
+        if (!db.yaseiMapSettings) return;
+        const { byId, legalBaseFormPool } = getYarimonDBEntryHelpers();
+        let count = 0;
+
+        for (const mapEntry of db.yaseiMapSettings) {
+            if (!mapEntry || !mapEntry.reasonDatas) continue;
+            for (const region of mapEntry.reasonDatas) {
+                if (!region || !region.yarimonDatas) continue;
+                for (const wild of region.yarimonDatas) {
+                    if (!wild) continue;
+                    const origYm = byId.get(wild.id);
+                    if (!origYm) continue;
+
+                    const origNormalYm = byId.get(wild.id);
+
+                    const level = wild.maxLv || wild.minLv || 1;
+                    const pool = bstMode
+                        ? filterBasesByEvolvedBst(legalBaseFormPool, level, origNormalYm, 50)
+                        : legalBaseFormPool;
+                    const newBase = getRandomArrayElement(pool, rng);
+                    let finalYm = getYarimonFormForLevel(newBase, level);
+                    wild.id = finalYm.id;
+                    count += 1;
+                }
+            }
+        }
+        log(`Randomized ${count} wild Yarimon slots.`);
+    }
 
     // #endregion
     
@@ -3548,6 +4148,18 @@
 
         // Adjust trainer Yarimon levels based on slot data.
         adjustTrainerYarimonLevels();
+
+        // Randomize Yarimon abilities if that option is enabled.
+        randomizeYarimonAbilities();
+
+        // Randomize Yarimon moves if that option is enabled.
+        randomizeYarimonMoves();
+
+        // Randomize trainer Yarimon rosters if that option is enabled.
+        randomizeTrainerYarimon();
+
+        // Randomize wild Yarimon encounters if that option is enabled.
+        randomizeWildYarimon();
     }
 
     // apLocId -> NetworkItem (populated by LocationScouts response).
@@ -3560,7 +4172,8 @@
      */
     function addShopItemsToDatabase() {
         let num = client.slot_data.extra_levels
-        let rng = makeRng(client.slot_data.seed + 1);
+        let seed = SaveStorage.get($gameSystem, 'seed')
+        let rng = makeRng(seed + 'shop-items');
         // Item data is stored in $N_Yarimon_DB.douguDatas. We need to add extra items to it starting at id 100
         // (to avoid conflicts with real items) for each extra level we have, so that they can be added to shops.
         function createItemData(id) {
@@ -3705,16 +4318,17 @@
                 showToast("Connecting to Archipelago...", { variant: 'info' });
                 await candidate.connect();
                 let savedSeed = SaveStorage.get($gameSystem, 'seed');
-                if (candidate.roomInfo && candidate.roomInfo.seed) {
-                    if (savedSeed && savedSeed !== candidate.roomInfo.seed) {
-                        error(`Seed mismatch. Connected to seed ${candidate.roomInfo.seed} but save file has seed ${savedSeed}`);
-                        showToast(`Attempted to connect to a different seed (${candidate.roomInfo.seed}) than the one saved in this save file (${savedSeed}). Connection aborted.`, { variant: 'error', ms: 10000 });
+                if (candidate.roomInfo && candidate.roomInfo.seed_name) {
+                    log(`room seed is ${candidate.roomInfo.seed_name}, saved seed is ${savedSeed}`);
+                    if (savedSeed && savedSeed !== candidate.roomInfo.seed_name) {
+                        error(`Seed mismatch. Connected to seed ${candidate.roomInfo.seed_name} but save file has seed ${savedSeed}`);
+                        showToast(`Attempted to connect to a different seed (${candidate.roomInfo.seed_name}) than the one saved in this save file (${savedSeed}). Connection aborted.`, { variant: 'error', ms: 10000 });
                         candidate.close();
                         return;
                     }
                     if (!savedSeed) {
-                        SaveStorage.set($gameSystem, 'seed', candidate.roomInfo.seed);
-                        log(`saved seed ${candidate.roomInfo.seed} to save file`);
+                        SaveStorage.set($gameSystem, 'seed', candidate.roomInfo.seed_name);
+                        log(`saved seed ${candidate.roomInfo.seed_name} to save file`);
                     }
                 }
                 log("connected to Archipelago as slot:", slot);

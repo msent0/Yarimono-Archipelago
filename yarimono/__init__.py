@@ -230,4 +230,8 @@ class YarimonoWorld(World):
             "encyclopedia_ct_bonus": int(self.options.encyclopedia_ct_bonus),
             "opponent_level_adjustment": int(self.options.opponent_level_adjustment),
             "fixed_trainer_levels": bool(self.options.fixed_trainer_levels),
+            "randomize_trainer_yarimon": int(self.options.randomize_trainer_yarimon),
+            "randomize_wild_yarimon": int(self.options.randomize_wild_yarimon),
+            "randomize_yarimon_abilities": int(self.options.randomize_yarimon_abilities),
+            "randomize_yarimon_moves": int(self.options.randomize_yarimon_moves),
         }
