@@ -2134,6 +2134,7 @@
             applyCommonEventPatches();
         } else if (object === $dataMap && eventPatchLoadingMapId != null) {
             applyMapPatches(eventPatchLoadingMapId);
+            applyMapAdditions(eventPatchLoadingMapId);
         }
     };
 
@@ -2680,6 +2681,358 @@
     }
     // #endregion
 
+    // #region Map Additions
+    // mapId → [event additions]
+    const mapAdditions = new Map();
+
+    /**
+     * Define a new event to be injected into a map at load time.
+     *
+     * @param {object} event
+     * @param {number} event.mapId - Map id the event lives on.
+     * @param {number} event.x - Tile-x position.
+     * @param {number} event.y - Tile-y position.
+     * @param {string} [event.name] - Editor name. Display only.
+     * @param {Array<Page>} event.pages - One or more pages.
+     *
+     * Page shape:
+     *   @param {object} Page
+     *   @param {Conditions} [Page.conditions] - Page-activation conditions. Default = no conditions (page always matches).
+     *   @param {Image}      [Page.image]      - What the event looks like. Default = invisible.
+     *   @param {Array}      [Page.commands]   - Command tree. Items can be
+     *     single command objects (`{ code, parameters }`), arrays of commands
+     *     (flattened), or commands with `list: [...]` for nested commands.
+     *   @param {string}     [Page.trigger]    - When the page runs. One of:
+     *       'action'      - Player presses OK while facing the event (default)
+     *       'playerTouch' - Player walks into the event
+     *       'eventTouch'  - Either party walks into the other
+     *       'autorun'     - Runs immediately, locks player input until done
+     *       'parallel'    - Runs continuously in the background
+     *   @param {string}     [Page.priority]   - Physical layer. One of:
+     *       'below'       - Walked over (no collision, drawn below player)
+     *       'same'        - Collides with player (default)
+     *       'above'       - Drawn above player, no collision
+     *   @param {string}     [Page.moveType]   - How the event moves on its own:
+     *       'fixed'       - Stays put (default)
+     *       'random'      - Wanders randomly
+     *       'approach'    - Walks toward the player
+     *       'custom'      - Follows Page.moveRoute
+     *   @param {number}     [Page.moveSpeed]  - Default 3.
+     *   @param {number}     [Page.moveFrequency] - Default 3.
+     *   @param {object}     [Page.moveRoute]  - { list: [...], repeat, skippable, wait }. Only used when moveType === 'custom'.
+     *   @param {boolean}    [Page.walkAnime]  - Animate while moving. Default true.
+     *   @param {boolean}    [Page.stepAnime]  - Animate while standing. Default false.
+     *   @param {boolean}    [Page.directionFix] - Lock facing direction. Default false.
+     *   @param {boolean}    [Page.through]    - Pass through anything. Default false.
+     *
+     * Conditions shape:
+     *   @param {object} Conditions
+     *   @param {number}  [Conditions.switchId]     - Id of the switch to check.
+     *   @param {boolean} [Conditions.switchValue]  - Value of the switch to check for. Default true.
+     *   @param {number}  [Conditions.switch2Id]    - Id of the second switch to check.
+     *   @param {boolean} [Conditions.switch2Value] - Value of the second switch to check for. Default true.
+     *   @param {number}  [Conditions.variableId]   - Id of the variable to check.
+     *   @param {number}  [Conditions.variableValue] - The variable must be ≥ this.
+     *   @param {number}  [Conditions.itemId]       - Id of the item the player must have.
+     *   @param {string}  [Conditions.selfSwitch]   - One of 'A','B','C','D'.
+     *
+     * Image shape:
+     *   @param {object}  Image
+     *   @param {string}  [Image.characterName]  - Filename in img/characters/. Default "" = invisible.
+     *   @param {number}  [Image.characterIndex] - 0–7, sub-character within the sheet. Default 0.
+     *   @param {number}  [Image.direction]      - 2=down (default), 4=left, 6=right, 8=up.
+     *   @param {number}  [Image.pattern]        - 0–2, which walk frame to show when standing. Default 1 (middle).
+     *   @param {number}  [Image.tileId]         - If non-zero, render this tileset tile instead of a character sprite.
+     */
+    function defineMapAddition(event) {
+        if (!event || typeof event !== 'object') {
+            warn("Invalid event addition:", event);
+            return;
+        }
+        const { mapId, x, y, pages, name } = event;
+        if (typeof mapId !== 'number' || typeof x !== 'number' || typeof y !== 'number' || !Array.isArray(pages)) {
+            warn("Event addition missing required properties or has invalid types:", event);
+            return;
+        }
+        const list = mapAdditions.get(mapId) || [];
+        list.push({ id: -1, x, y, pages, name });  // ids are assigned at injection time
+        mapAdditions.set(mapId, list);
+    }
+
+    function _shorthandConditionsToConditions(conds) {
+        if (!conds) return {};
+        const { switchId, switchValue, switch2Id, switch2Value, variableId, variableValue, itemId, selfSwitch } = conds;
+        const conditions = {};
+        if (switchId !== undefined) {
+            conditions.switch1Valid = true;
+            conditions.switch1Id = switchId;
+            conditions.switch1Value = !!switchValue;
+        }
+        if (switch2Id !== undefined) {
+            conditions.switch2Valid = true;
+            conditions.switch2Id = switch2Id;
+            conditions.switch2Value = !!switch2Value;
+        }
+        if (variableId !== undefined) {
+            conditions.variableValid = true;
+            conditions.variableId = variableId;
+            conditions.variableValue = variableValue;
+        }
+        if (itemId !== undefined) {
+            conditions.itemId = itemId;
+            conditions.itemValid = true;
+        }
+        if (selfSwitch) {
+            conditions.selfSwitchValid = true;
+            conditions.selfSwitchCh = selfSwitch;
+        }
+        return conditions;
+    }
+
+    function _shorthandImageToImage(image) {
+        if (!image) return { tileId: 0, characterName: "", characterIndex: 0, direction: 2, pattern: 1 };
+        const { tileId, characterName, characterIndex, direction, pattern } = image;
+        return {
+            tileId: tileId || 0,
+            characterName: characterName || "",
+            characterIndex: characterIndex || 0,
+            direction: direction || 2,
+            pattern: pattern || 1,
+        };
+    }
+
+    // Walk a command tree and flatten it into an indent-tagged list.
+    function _flattenCommands(input, indent = 0) {
+        const out = [];
+        const items = Array.isArray(input) ? input : [input];
+        for (const it of items) {
+            if (it == null) continue;
+            if (Array.isArray(it)) {
+                for (const sub of _flattenCommands(it, indent)) out.push(sub);
+                continue;
+            }
+            // Strip `list` out of the command.
+            const { list: body } = it;
+            const cmd = {};
+            for (const k of Object.keys(it)) if (k !== 'list') cmd[k] = it[k];
+            if (cmd.indent == null) cmd.indent = indent;
+            if (cmd.parameters == null) cmd.parameters = [];
+            out.push(cmd);
+            if (body) {
+                for (const sub of _flattenCommands(body, indent + 1)) out.push(sub);
+            }
+        }
+        return out;
+    }
+
+    const _PRIORITY_MAP = { below: 0, same: 1, above: 2 };
+    const _TRIGGER_MAP  = { action: 0, playerTouch: 1, eventTouch: 2,
+                            autorun: 3, parallel: 4 };
+    const _MOVE_TYPE_MAP = { fixed: 0, random: 1, approach: 2, custom: 3 };
+
+    function _specToEvent(spec) {
+        const pages = spec.pages.map(p => ({
+            conditions: Object.assign({
+                switch1Valid: false, switch1Id: 1,
+                switch2Valid: false, switch2Id: 1,
+                variableValid: false, variableId: 1, variableValue: 0,
+                selfSwitchValid: false, selfSwitchCh: 'A',
+                itemValid: false, itemId: 1,
+                actorValid: false, actorId: 1,
+            }, _shorthandConditionsToConditions(p.conditions)),
+            image: _shorthandImageToImage(p.image),
+            moveType: p.moveType in _MOVE_TYPE_MAP ? _MOVE_TYPE_MAP[p.moveType] : 0,
+            moveSpeed: typeof p.moveSpeed === 'number' ? p.moveSpeed : 3,
+            moveFrequency: typeof p.moveFrequency === 'number' ? p.moveFrequency : 3,
+            moveRoute: p.moveRoute || { list: [{ code: 0 }], repeat: false, skippable: false, wait: false },
+            walkAnime: p.walkAnime !== false,
+            stepAnime: p.stepAnime === true,
+            directionFix: p.directionFix === true,
+            through: p.through === true,
+            priorityType: p.priority in _PRIORITY_MAP ? _PRIORITY_MAP[p.priority] : 1,
+            trigger:      p.trigger  in _TRIGGER_MAP  ? _TRIGGER_MAP[p.trigger]   : 0,
+            list: [
+                ..._flattenCommands(p.commands || []),
+                { code: 0, indent: 0, parameters: [] },
+            ],
+        }));
+        const ev = {
+            id: spec.id,
+            name: String(spec.name || ''),
+            note: spec.note || '',
+            pages,
+            x: spec.x,
+            y: spec.y,
+        };
+        DataManager.extractMetadata(ev);
+        return ev;
+    }
+
+    // Inject all registered additions for the given map.
+    function applyMapAdditions(mapId) {
+        const specs = mapAdditions.get(mapId);
+        if (!specs || !$dataMap || !$dataMap.events) return;
+        const startId = $dataMap.events.length;
+        for (const spec of specs) {
+            spec.id = $dataMap.events.length;  // first free slot
+            $dataMap.events.push(_specToEvent(spec));
+        }
+        if (specs.length === 0) return;
+        log(`Map ${mapId}: injected ${specs.length} addition(s) at ids ${startId}..${$dataMap.events.length - 1}`);
+
+        // If we're currently on the map, also inject the new events into the running game state and add their sprites.
+        if (!$gameMap || $gameMap.mapId() !== mapId || !$gameMap._events) return;
+        for (let i = startId; i < $dataMap.events.length; i++) {
+            if (!$gameMap._events[i]) {
+                $gameMap._events[i] = new Game_Event(mapId, i);
+            }
+        }
+        const scene = SceneManager._scene;
+        const spriteset = scene && scene._spriteset;
+        if (!spriteset || !spriteset._characterSprites || !spriteset._tilemap) return;
+        for (let i = startId; i < $dataMap.events.length; i++) {
+            const ev = $gameMap._events[i];
+            if (!ev) continue;
+            const sprite = new Sprite_Character(ev);
+            spriteset._characterSprites.push(sprite);
+            spriteset._tilemap.addChild(sprite);
+        }
+    }
+
+    
+    // Convenience functions for building command lists.
+    const COMMANDS = {
+        // 101 Show Text header, then one 401 per line.
+        // 101 params: [faceName, faceIndex, background, positionType]
+        //   background: 0=window, 1=dim, 2=transparent
+        //   positionType: 0=top, 1=middle, 2=bottom
+        msg: (text) => {
+            const lines = String(text).split('\n');
+            return [
+                { code: 101, parameters: ["", 0, 0, 2] },
+                ...lines.map(line => ({ code: 401, parameters: [line] })),
+            ];
+        },
+
+        // 121 Control Switches: [startId, endId, op]
+        //   op: 0=ON, 1=OFF
+        setSwitch: (switchId, value) => ({
+            code: 121, parameters: [switchId, switchId, value ? 0 : 1],
+        }),
+
+        // 122 Control Variables: [startId, endId, op, operandType, ...operandArgs]
+        //   op: 0=Set, 1=Add, 2=Sub, 3=Mul, 4=Div, 5=Mod
+        //   operandType: 0=Constant, 1=Variable, 2=Random, 3=GameData, 4=Script
+        //   constant operand: ...args = [value]
+        //   variable operand: ...args = [variableId]
+        //   script operand:   ...args = [scriptString]
+        setVar: (varId, value) => ({
+            code: 122, parameters: [varId, varId, 0, 0, value],
+        }),
+        // Positive `amount` increases the variable, negative decreases it.
+        changeVar: (varId, amount) => ({
+            code: 122, parameters: [varId, varId, amount >= 0 ? 1 : 2, 0, Math.abs(amount)],
+        }),
+        setVarFromVar: (destId, srcId) => ({
+            code: 122, parameters: [destId, destId, 0, 1, srcId],
+        }),
+        setVarFromScript: (varId, scriptStr) => ({
+            code: 122, parameters: [varId, varId, 0, 4, scriptStr],
+        }),
+
+        // 126 Change Items: [itemId, op, operandType, operand]
+        //   op: 0=Increase, 1=Decrease
+        //   operandType: 0=Constant, 1=Variable
+        // Positive `amount` increases the item, negative decreases it.
+        changeItems: (itemId, amount) => ({
+            code: 126,
+            parameters: [itemId, amount >= 0 ? 0 : 1, 0, Math.abs(amount)],
+        }),
+
+        // 201 Transfer Player: [mapType, mapId, x, y, direction, fadeType]
+        //   mapType: 0=Direct, 1=Variable
+        //   direction: 0=Retain, 2=Down, 4=Left, 6=Right, 8=Up
+        //   fadeType: 0=Black, 1=White, 2=None
+        transfer: (mapId, x, y, direction = 0, fadeType = 0) => ({
+            code: 201, parameters: [0, mapId, x, y, direction, fadeType],
+        }),
+
+        // 117 Common Event: [commonEventId]
+        callCE: (ceId) => ({ code: 117, parameters: [ceId] }),
+
+        // 355 Script: [scriptString]
+        script: (scriptStr) => ({ code: 355, parameters: [scriptStr] }),
+
+        // 111 Conditional Branch: [type, ...params]
+        //   type 0 (Switch): [0, switchId, state]   state: 0=ON, 1=OFF
+        //   type 1 (Variable): [1, varId, operandType, operandValue, comparison]
+        //     comparison: 0=Eq, 1=GtE, 2=LtE, 3=Gt, 4=Lt, 5=NotEq
+        //
+        // ifSwitch(id, on, body, elseBody?) — pass `elseBody` to add an Else branch.
+        ifSwitch: (switchId, on, body, elseBody) => {
+            const out = [
+                { code: 111, parameters: [0, switchId, on ? 0 : 1], list: body },
+            ];
+            if (elseBody !== undefined) {
+                out.push({ code: 411, parameters: [], list: elseBody });
+            }
+            out.push({ code: 412, parameters: [] });
+            return out;
+        },
+
+        // Chained if/elseif/else built as nested else-bodies. cases is an
+        // array of { switchId, on, body }; the optional `elseBody` runs if
+        // nothing matched. Translates to:
+        //   if A: bodyA else { if B: bodyB else { ... else: elseBody } }
+        ifElseSwitch: (cases, elseBody) => {
+            if (!cases || cases.length === 0) return elseBody || [];
+            const [first, ...rest] = cases;
+            return COMMANDS.ifSwitch(
+                first.switchId,
+                first.on,
+                first.body,
+                rest.length > 0 ? COMMANDS.ifElseSwitch(rest, elseBody) : elseBody,
+            );
+        },
+
+        // 205 Set Movement Route: [target, moveRoute]
+        //   target: -1 = this event, 0 = player, 1+ = event id
+        //   moveRoute: { list: [...], repeat, skippable, wait }
+        //       moveRoute.list is an array of movement commands, each { code, parameters }.
+        //       code is a movement command code:
+        //          0: END, 1: Move Down, 2: Move Left, 3: Move Right, 4: Move Up,
+        //          5: Move Lower Left, 6: Move Lower Right, 7: Move Upper Left, 8: Move Upper Right,
+        //          9: Move Random, 10: Move Toward Player, 11: Move Away From Player,
+        //          12: Step Forward, 13: Step Backward, 14: Jump, 15: Wait, 16: Turn Down, 17: Turn Left,
+        //          18: Turn Right, 19: Turn Up, 20: Turn 90° Right, 21: Turn 90° Left, 22: Turn 180°,
+        //          23: Turn 90° Random, 24: Turn Toward Player, 25: Turn Away From Player, 26: Switch On, 
+        //          27: Switch Off, 28: Change Speed, 29: Change Frequency, 30: Walk animation on, 31: Walk animation off,
+        //          32: Step animation on, 33: Step animation off, 34: Direction Fix on, 35: Direction Fix off,
+        //          36: Through on, 37: Through off, 38: Transparent on, 39: Transparent off, 40: Change Graphic,
+        //          41: Change Opacity, 42: Change Blending Mode, 43: Play SE, 44: Script
+        setMoveRoute: (target, moveRoute) => ({
+            code: 205,
+            parameters: [
+                target === 'player' ? 1 : target === 'event' ? 2 : 0,
+                moveRoute,
+            ],
+        }),
+
+        // 123 Control Self Switch: [switchCh, op]
+        //   switchCh: 'A','B','C','D'
+        //   op: 0=ON, 1=OFF
+        setSelfSwitch: (switchCh, value) => ({
+            code: 123,
+            parameters: [switchCh, value ? 0 : 1],
+        }),
+    };
+    // #endregion
+
+    // #region Defined Map Additions
+
+    // Currently no defined map additions.
+
+    // #endregion
 
     // #region Received Items
     /**
@@ -3000,7 +3353,10 @@
         applyCommonEventPatches();
         applyTemplatePatches();
         // The current map might have been loaded before we connected, so apply map patches if so.
-        if ($gameMap && $gameMap.mapId()) applyMapPatches($gameMap.mapId());
+        if ($gameMap && $gameMap.mapId()) {
+            applyMapPatches($gameMap.mapId());
+            applyMapAdditions($gameMap.mapId());
+        }
 
 
         // Set look flags on gallery so all characters can be viewed without needing to unlock them in-game.
