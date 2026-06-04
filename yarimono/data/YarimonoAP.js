@@ -22,6 +22,7 @@
         ULTIMATE_MOVE: 1085000,
         SCENE_UNLOCK: 1086000,
         GOLD: 1087000,
+        ROAD_PASS: 1088000,
     }
 
     const LOCATION_IDS = {
@@ -916,7 +917,7 @@
     //   ITEM <id> [count]  grant/remove items (default +1; negative removes)
     //   LVL [+N|-N|N]      print TrainerLv, or delta / absolute set
 
-    const _UNLOCK_SEQ = 'msent';
+    const _UNLOCK_SEQ = 'debugplease';
     let _seqBuf = '';
     
     window.addEventListener('keydown', (e) => {
@@ -1374,10 +1375,31 @@
         on(event, fn) { return this.events.on(event, fn); }
 
         /** Open the socket and complete the AP auth handshake. */
-        async connect() {
+        async connect(opts) {
+            opts = opts || {};
             this._intentionalClose = false;
             await this._openSocket();
+            await this._awaitRoomInfo();
+            if (typeof opts.validate === 'function') {
+                const reason = opts.validate(this.roomInfo);
+                if (reason) {
+                    this.close();
+                    const err = new Error(reason);
+                    err.preAuthAbort = true;
+                    throw err;
+                }
+            }
             await this._authenticate();
+        }
+
+        _awaitRoomInfo() {
+            if (this.roomInfo) return Promise.resolve(this.roomInfo);
+            return new Promise((resolve) => {
+                const off = this.events.on("roomInfo", (msg) => {
+                    off();
+                    resolve(msg);
+                });
+            });
         }
 
         /** Close the socket and stop reconnect attempts. */
@@ -1971,7 +1993,7 @@
                 log(`Event shop item gained with id ${item.id}, marking location ${locId} as checked.`);
                 client.sendLocationChecks([locId]);
                 return;
-            } else if (id >= AP_SHOP_ITEM_ID_BASE) {
+            } else if (id >= AP_SHOP_ITEM_ID_BASE && id < ROAD_PASS_GAME_ITEM_BASE) {
                 let locId = LOCATION_IDS.EXTRA_SHOP + (id - AP_SHOP_ITEM_ID_BASE);
                 log(`AP shop item gained with id ${item.id}, marking location ${locId} as checked.`);
                 client.sendLocationChecks([locId]);
@@ -2479,6 +2501,17 @@
     // Apply patches after loading common events or map data.
     const _DataManager_onLoad = DataManager.onLoad;
     DataManager.onLoad = function (object) {
+        // Attach the mapId we're loading to $dataMap so we can know it later
+        if (object === $dataMap && eventPatchLoadingMapId != null) {
+            $dataMap._apMapId = eventPatchLoadingMapId;
+        }
+        if (object === $dataMap && eventPatchLoadingMapId != null
+            && $gameSystem && SaveStorage.isAPSave($gameSystem)) {
+            // Map additions need to be applied before onLoad. If we wait
+            // until after prefab events may have been created. For consistent
+            // ids we need to always add events before prefabs are created.
+            applyMapAdditions(eventPatchLoadingMapId);
+        }
         _DataManager_onLoad.call(this, object);
         if (object === $dataSystem) _padSwitchArray();
         if (!$gameSystem || !SaveStorage.isAPSave($gameSystem)) return;
@@ -2486,7 +2519,6 @@
             applyCommonEventPatches();
         } else if (object === $dataMap && eventPatchLoadingMapId != null) {
             applyMapPatches(eventPatchLoadingMapId);
-            applyMapAdditions(eventPatchLoadingMapId);
             fillOrphanEventSlots(eventPatchLoadingMapId);
         }
     };
@@ -3183,8 +3215,8 @@
                             autorun: 3, parallel: 4 };
     const _MOVE_TYPE_MAP = { fixed: 0, random: 1, approach: 2, custom: 3 };
 
-    function _specToEvent(spec) {
-        const pages = spec.pages.map(p => ({
+    function _specToPage(p) {
+        return {
             conditions: Object.assign({
                 switch1Valid: false, switch1Id: 1,
                 switch2Valid: false, switch2Id: 1,
@@ -3208,7 +3240,11 @@
                 ..._flattenCommands(p.commands || []),
                 { code: 0, indent: 0, parameters: [] },
             ],
-        }));
+        };
+    }
+
+    function _specToEvent(spec) {
+        const pages = spec.pages.map(_specToPage);
         const ev = {
             id: spec.id,
             name: String(spec.name || ''),
@@ -3240,8 +3276,9 @@
     function fillOrphanEventSlots(mapId) {
         if (!$gameMap || $gameMap.mapId() !== mapId) return;
         if (!$gameMap._events || !$dataMap || !$dataMap.events) return;
+        // $dataMap might still be a previous map. If it is, we shouldn't touch it.
+        if ($dataMap._apMapId !== mapId) return;
         let filled = 0;
-        if ($dataMap.id !== mapId) return;
         for (let i = 0; i < $gameMap._events.length; i++) {
             if (!$gameMap._events[i]) continue;
             if ($dataMap.events[i]) continue;
@@ -3260,6 +3297,8 @@
     function applyMapAdditions(mapId) {
         const specs = mapAdditions.get(mapId);
         if (!specs || !$dataMap || !$dataMap.events) return;
+        // $dataMap might still be a previous map. If it is, we shouldn't touch it.
+        if ($dataMap._apMapId !== mapId) return;
         // Flag that we've applied additions to this map so we don't do it again if this
         // function is called multiple times for the same map.
         if ($dataMap._apAdditionsApplied) return;
@@ -3372,6 +3411,22 @@
             return out;
         },
 
+        // 111 Conditional Branch, type 8 (Item): [8, itemId]. MV's editor
+        // only has a "has item" condition, so we use an else branch to handle
+        // the "doesn't have item" case if needed.
+        ifItem: (itemId, has, body, elseBody) => {
+            const ifBody = has ? body : (elseBody || []);
+            const elseBody2 = has ? elseBody : body;
+            const out = [
+                { code: 111, parameters: [8, itemId], list: ifBody },
+            ];
+            if (elseBody2 !== undefined && elseBody2.length) {
+                out.push({ code: 411, parameters: [], list: elseBody2 });
+            }
+            out.push({ code: 412, parameters: [] });
+            return out;
+        },
+
         // Chained if/elseif/else built as nested else-bodies. cases is an
         // array of { switchId, on, body }; the optional `elseBody` runs if
         // nothing matched. Translates to:
@@ -3410,6 +3465,20 @@
             ],
         }),
 
+        // Move an event to x, y.
+        //   target — JS expression returning a Game_Character
+        //   x, y   — JS expressions or numbers for the destination tile.
+        //   opts   — { face?: 2|4|6|8, maxSteps?: number }
+        // 
+        // Note: JsScript37Set wraps the command355 with a bad regex 
+        // `/this./g -> _ck_this.` that eats the character after `this`. 
+        // To work around that, we write `this._self` in the script body, 
+        // and define a getter for `_self` that returns the interpreter instance.
+        moveTo: (target, x, y, opts) =>
+            COMMANDS.script(
+                `$ap.moveTo(this._self, ${target}, ${x}, ${y}, ${JSON.stringify(opts || {})})`
+            ),
+
         // 123 Control Self Switch: [switchCh, op]
         //   switchCh: 'A','B','C','D'
         //   op: 0=ON, 1=OFF
@@ -3417,13 +3486,298 @@
             code: 123,
             parameters: [switchCh, value ? 0 : 1],
         }),
+        
+        // 102 Show Choices: [choices, cancelType, defaultType, positionType, background]
+        //   choices: array of choice strings
+        //   cancelType: -1=disallow ESC, -2=branch via 403, 0..N-1=index ESC picks
+        //   defaultType: -1=none, 0..N-1=initial cursor
+        //   positionType: 0=left, 1=middle, 2=right
+        //   background: 0=window, 1=dim, 2=transparent
+        // Each choice's body is the corresponding entry of `bodies`. The
+        // returned command sequence is [102, 402+list, ..., 404].
+        showChoices: (choices, bodies, opts) => {
+            opts = opts || {};
+            const cancelType = typeof opts.cancel === 'number' ? opts.cancel : choices.length - 1;
+            const defaultType = typeof opts.default === 'number' ? opts.default : 0;
+            const positionType = typeof opts.position === 'number' ? opts.position : 2;
+            const background = typeof opts.background === 'number' ? opts.background : 0;
+            const out = [{
+                code: 102,
+                parameters: [choices.slice(), cancelType, defaultType, positionType, background],
+            }];
+            for (let i = 0; i < choices.length; i++) {
+                out.push({ code: 402, parameters: [i, choices[i]], list: bodies[i] || [] });
+            }
+            out.push({ code: 404, parameters: [] });
+            return out;
+        },
     };
     // #endregion
 
-    // #region Defined Map Additions
+    // #region $ap Runtime Helpers
+    // Globals reachable from event Script (355) commands.
+    window.$ap = window.$ap || {};
 
-    // Currently no defined map additions.
+    // Get event by name.
+    $ap.event = function(name) {
+        if (!$gameMap || !$gameMap._events) return null;
+        for (let i = 1; i < $gameMap._events.length; i++) {
+            const e = $gameMap._events[i];
+            if (e && e.event() && e.event().name === name) return e;
+        }
+        return null;
+    };
 
+    const AP_TURN_CODE_BY_DIR = { 2: 16, 4: 17, 6: 18, 8: 19 };
+
+    // Move event toward (x, y) one tile at a time, optionally facing a direction at the end.
+    $ap.moveTo = function(interpreter, character, x, y, opts) {
+        if (!character) return;
+        opts = opts || {};
+        const maxSteps = typeof opts.maxSteps === 'number' ? opts.maxSteps : Math.max(Math.abs(character._x - x), Math.abs(character._y - y));
+        const list = [];
+        for (let i = 0; i < maxSteps; i++) {
+            list.push({ code: 45, parameters: [`this._stepToward(${x}, ${y})`] });
+        }
+        if (opts.face != null) {
+            const turn = AP_TURN_CODE_BY_DIR[opts.face];
+            if (turn) list.push({ code: turn, parameters: [] });
+        }
+        list.push({ code: 0, parameters: [] });
+        character.forceMoveRoute({
+            list, repeat: false, skippable: true, wait: false,
+        });
+        interpreter._character = character;
+        interpreter._waitMode  = 'route';
+    };
+
+    // Workaround for JsScript37Set's `/this./g -> _ck_this.` regex.
+    if (!Object.getOwnPropertyDescriptor(Game_Interpreter.prototype, '_self')) {
+        Object.defineProperty(Game_Interpreter.prototype, '_self', {
+            get: function() { return this; },
+            configurable: true,
+        });
+    }
+
+    // One-tile step toward (x, y)
+    Game_Character.prototype._stepToward = function(x, y) {
+        if (this._x === x && this._y === y) return;
+        const dx = x - this._x, dy = y - this._y;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            this.moveStraight(dx > 0 ? 6 : 4);
+        } else {
+            this.moveStraight(dy > 0 ? 2 : 8);
+        }
+    };
+    // #endregion
+
+    // #region Road Passes
+    // Three optional progression items that gate the exits out of Big City.
+    const SW_ROAD_PASS_HINTS_ENABLED = 901;
+    const VAR_ROAD_PASS_HINT = 61;
+    const SW_BIG_CITY_AFTER_DREAM = 96;
+    // Game items added in the 300 range.
+    const ROAD_PASS_GAME_ITEM_BASE = 300;
+
+    // Direction-specific config.
+    const ROAD_PASSES = [
+        {
+            dir: 'central',
+            compassDir: 'north',
+            itemId: ITEM_IDS.ROAD_PASS + 1,
+            itemName: "Central Road Pass",
+            gameItemId: ROAD_PASS_GAME_ITEM_BASE + 1,
+            exitEventId: 166,
+            areaTag: '<AreaEvent:6x1>',
+            pushBackCode: 1,
+            npc: { x: 53, y: 4, direction: 2, characterName: "Woman_Job1", characterIndex: 3 },
+            talkDialog: "Central Road is closed off while we prepare for the\ntournament. You can't go through without a pass.",
+            stopDialog: "Hey! This road's closed right now. You can't go through\nwithout a pass.",
+            hintDialog: "Check around {location}.\nIt's a long shot, but you might find a pass there.",
+        },
+        {
+            dir: 'beach',
+            compassDir: 'east',
+            itemId: ITEM_IDS.ROAD_PASS + 2,
+            itemName: "Beach Road Pass",
+            gameItemId: ROAD_PASS_GAME_ITEM_BASE + 2,
+            exitEventId: 162,
+            areaTag: '<AreaEvent:1x10>',
+            pushBackCode: 3,
+            npc: { x: 8, y: 32, direction: 6, characterName: "Woman_Job1", characterIndex: 2 },
+            talkDialog: "Because of an event at the teahouse, this road's closed\nright now to people without a pass. Sorry, but I can't\nlet you through.",
+            stopDialog: "Sorry kid, but this road's closed right now unless you\nhave a pass. I can't let you through without one.",
+            hintDialog: "I heard you can find one at {location}.\nDon't tell anyone I told you, though!",
+        },
+        {
+            dir: 'cave',
+            compassDir: 'south',
+            itemId: ITEM_IDS.ROAD_PASS + 3,
+            itemName: "Cave Road Pass",
+            gameItemId: ROAD_PASS_GAME_ITEM_BASE + 3,
+            exitEventId: 165,
+            areaTag: '<AreaEvent:3x1>',
+            pushBackCode: 4,
+            npc: { x: 53, y: 57, direction: 8, characterName: "Woman_Job1", characterIndex: 0 },
+            // Earthquake damage and construction is in progress.
+            talkDialog: "That earthquake caused some damage down the road.\nWhile it's being repaired, you'll need a pass to get\nthrough, sorry.",
+            stopDialog: "I can't let you through right now. This road's closed\nwhile repairs are in progress. You'll need a pass\nto get through.",
+            hintDialog: "You can probably find one at {location}.\n",
+        },
+    ];
+
+    // Inject inventory entries for the three passes.
+    function addRoadPassItemData() {
+        if (!Array.isArray($dataItems)) return;
+        for (const p of ROAD_PASSES) {
+            const desc = `Allows passage through the ${p.compassDir}\nexit of Big City.`;
+            $dataItems[p.gameItemId] = {
+                id: p.gameItemId,
+                name: p.itemName,
+                description: desc,
+                iconIndex: 0,
+                price: 0,
+                consumable: false,
+                itypeId: 2,
+                scope: 0,
+                occasion: 3,
+                speed: 0,
+                successRate: 100,
+                repeats: 1,
+                tpGain: 0,
+                hitType: 0,
+                animationId: 0,
+                maxItem: 1,
+                damage: { type: 0, elementId: 0, formula: "0", variance: 20, critical: false },
+                effects: [],
+                note: "",
+                meta: {},
+            };
+            $N_Yarimon_DB.douguDatas[p.gameItemId - 1] = {
+                bunrui: "大切",
+                exSkillList: [],
+                id: p.gameItemId,
+                name: p.itemName,
+                name_Locs: [
+                    { locName: "en", value: p.itemName },
+                    { locName: "cn", value: p.itemName },
+                    { locName: "tc", value: p.itemName },
+                    { locName: "ko", value: p.itemName },
+                ],
+                notSyohiFlg: true,
+                picPath: "Card",
+                price: 0,
+                setu: desc,
+                setu_Locs: [
+                    { locName: "en", value: desc },
+                    { locName: "cn", value: desc },
+                    { locName: "tc", value: desc },
+                    { locName: "ko", value: desc },
+                ],
+            };
+        }
+    }
+
+    /**
+     * Set up the road pass items data and set the hint switch based on AP slot data.
+     */
+    function initRoadPasses() {
+        if (!client || !client.slot_data) return;
+        addRoadPassItemData();
+        const wantsHints = client.slot_data.road_pass_hints;
+        $gameSwitches.setValue(SW_ROAD_PASS_HINTS_ENABLED, wantsHints);
+        log(`Road pass hints ${wantsHints ? "enabled" : "disabled"} based on AP slot data.`);
+    }
+
+    function _roadPassHintText(direction) {
+        if (!client || !client.slot_data) return "(unknown)";
+        const locs = client.slot_data.pass_locations || {};
+        const entry = locs[direction];
+        if (!entry) return "(unknown)";
+        const locName = client.locationName(entry.player, entry.address);
+        const playerName = client.playerName(entry.player);
+        const ownSlot = client.slotInfo && client.slotInfo.slot;
+        return entry.player === ownSlot ? locName : `${locName} (${playerName})`;
+    }
+    window._roadPassHintText = _roadPassHintText;
+
+    function _npcCommands(p) {
+        const askChoice   = `Where can I find a ${p.itemName}?`;
+        const leaveChoice = "Never mind.";
+        return [
+            COMMANDS.callCE(4),
+            COMMANDS.msg(p.talkDialog),
+            COMMANDS.ifSwitch(SW_ROAD_PASS_HINTS_ENABLED, true, [
+                COMMANDS.msg(`(View the location of the ${p.itemName}?)`),
+                COMMANDS.showChoices([askChoice, leaveChoice], [
+                    [
+                        COMMANDS.script(
+                            `$gameVariables.setValue(${VAR_ROAD_PASS_HINT}, ` +
+                            `window._roadPassHintText ? window._roadPassHintText('${p.dir}') : '?');`),
+                        COMMANDS.msg(p.hintDialog.replace("{location}", `\\V[${VAR_ROAD_PASS_HINT}]`)),
+                    ],
+                    [],
+                ]),
+            ]),
+            COMMANDS.callCE(2),
+        ];
+    }
+
+    for (const p of ROAD_PASSES) {
+        // Append a page to the existing city exit block event. The condition on
+        // it means it activates after the player hits chapter 3, which is when
+        // the previous page stops blocking.
+        defineEventPatch({
+            target: { mapId: 17, eventId: p.exitEventId },
+            root: true,
+            transform: (evt) => {
+                const npc = `window.$ap.event('${p.dir}')`;
+                evt.pages.push(_specToPage({
+                    conditions: { switchId: SW_BIG_CITY_AFTER_DREAM, switchValue: true },
+                    priority: 'below', trigger: 'playerTouch', through: true,
+                    commands: [
+                        { code: 108, parameters: [p.areaTag] },
+                        // If the player doesn't have the pass
+                        COMMANDS.ifItem(p.gameItemId, false, [
+                            // Move the npc for this exit to the player 
+                            COMMANDS.moveTo(npc, '$gamePlayer.x', '$gamePlayer.y'),
+                            // Open dialog box, talk, close dialog box
+                            COMMANDS.callCE(4),
+                            COMMANDS.msg(p.stopDialog),
+                            COMMANDS.callCE(2),
+                            // Move player away from the exit
+                            { code: 205, parameters: [-1, {
+                                list: [{ code: p.pushBackCode, parameters: [] }, { code: 0, parameters: [] }],
+                                repeat: false, skippable: false, wait: true,
+                            }] },
+                            // Move the npc back to their post
+                            COMMANDS.moveTo(npc, p.npc.x, p.npc.y, { face: p.npc.direction }),
+                        ])
+                    ],
+                }));
+            },
+        });
+
+        defineMapAddition({
+            mapId: 17,
+            x: p.npc.x, y: p.npc.y,
+            name: `${p.dir}`,
+            pages: [
+                {
+                    conditions: { switchId: SW_BIG_CITY_AFTER_DREAM, switchValue: true },
+                    image: { characterName: p.npc.characterName, characterIndex: p.npc.characterIndex, direction: p.npc.direction },
+                    priority: 'same', trigger: 'action',
+                    commands: _npcCommands(p),
+                },
+                {
+                    // Vanish once pass is acquired.
+                    conditions: { itemId: p.gameItemId },
+                    priority: 'below', trigger: 'action', through: true,
+                    commands: [],
+                },
+            ],
+        });
+    }
     // #endregion
 
     // #region Received Items
@@ -3484,11 +3838,17 @@
             } else {
                 warn("Received item with id in scene unlock range but location doesn't map to a known scene:", item);
             }
-        } else if (itemId >= ITEM_IDS.GOLD) {
+        } else if (itemId >= ITEM_IDS.GOLD && itemId < ITEM_IDS.ROAD_PASS) {
             // Gold/Yen. Value is itemId - ITEM_IDS.GOLD * 1000
             const amount = (itemId - ITEM_IDS.GOLD) * 1000;
             log(`Adding ${amount} gold to inventory for received item ${itemId}`);
             $gameParty.gainGold(amount);
+        } else if (itemId >= ITEM_IDS.ROAD_PASS) {
+            // Road pass. Maps to game item id = itemId - ITEM_IDS.ROAD_PASS + ROAD_PASS_GAME_ITEM_BASE.
+            // Just add it to the inventory, which will trigger the relevant event page changes.
+            const gameItemId = itemId - ITEM_IDS.ROAD_PASS + ROAD_PASS_GAME_ITEM_BASE;
+            log(`Adding road pass item ${gameItemId} to inventory for received item ${itemId}`);
+            _gameParty_gainItem.call($gameParty, $dataItems[gameItemId], 1);
         }
     }
     // #endregion
@@ -4137,6 +4497,9 @@
         // Add items to shops for each extra level we have from AP.
         addShopItemsToDatabase();
 
+        // Optional progression blocking items.
+        initRoadPasses();
+
         // Calculate the cheat tackle bonus based on unlocked scenes. In case we have some scenes
         // already unlocked from a previous session.
         recalculateCheatTackleBonus();
@@ -4317,16 +4680,18 @@
 
             try {
                 showToast("Connecting to Archipelago...", { variant: 'info' });
-                await candidate.connect();
-                let savedSeed = SaveStorage.get($gameSystem, 'seed');
+                await candidate.connect({
+                    validate: (room) => {
+                        const savedSeed = SaveStorage.get($gameSystem, 'seed');
+                        const roomSeed = room && room.seed_name;
+                        if (savedSeed && roomSeed && savedSeed !== roomSeed) {
+                            return `Attempted to connect to a different seed (${roomSeed}) than the one saved in this save file (${savedSeed}). Connection aborted.`;
+                        }
+                        return null;
+                    },
+                });
                 if (candidate.roomInfo && candidate.roomInfo.seed_name) {
-                    log(`room seed is ${candidate.roomInfo.seed_name}, saved seed is ${savedSeed}`);
-                    if (savedSeed && savedSeed !== candidate.roomInfo.seed_name) {
-                        error(`Seed mismatch. Connected to seed ${candidate.roomInfo.seed_name} but save file has seed ${savedSeed}`);
-                        showToast(`Attempted to connect to a different seed (${candidate.roomInfo.seed_name}) than the one saved in this save file (${savedSeed}). Connection aborted.`, { variant: 'error', ms: 10000 });
-                        candidate.close();
-                        return;
-                    }
+                    const savedSeed = SaveStorage.get($gameSystem, 'seed');
                     if (!savedSeed) {
                         SaveStorage.set($gameSystem, 'seed', candidate.roomInfo.seed_name);
                         log(`saved seed ${candidate.roomInfo.seed_name} to save file`);
@@ -4337,6 +4702,11 @@
                 client = candidate;
                 gameDataInitialization();
             } catch (e) {
+                if (e.preAuthAbort) {
+                    error("pre-auth aborted:", e.message);
+                    showToast(e.message, { variant: 'error', ms: 10000 });
+                    return;
+                }
                 error("connect failed:", e);
                 showToast(`Connection failed: ${e.message}`, { variant: 'error', ms: 5000 });
             }

@@ -9,7 +9,7 @@ from BaseClasses import Region
 from rule_builder.rules import (
     And, CanReachLocation, CanReachRegion, Has, Rule, True_,
 )
-from .Conditions import OnScenes
+from .Conditions import OnScenes, OnRoadPasses
 
 REGIONS: list[str] = [
     "Menu",
@@ -159,11 +159,11 @@ TRANSITIONS: list[Transition] = [
 
     # Routes out of Big City
     Transition("Big City", "Cave Road",
-               rule=CanReachLocation("Dream 1 Complete")),
+               rule=CanReachLocation("Dream 1 Complete") & OnRoadPasses(Has("Cave Road Pass"))),
     Transition("Big City", "City Road",
-               rule=CanReachLocation("Dream 1 Complete")),
+               rule=CanReachLocation("Dream 1 Complete") & OnRoadPasses(Has("Central Road Pass"))),
     Transition("Big City", "Beach Road",
-               rule=CanReachLocation("Dream 1 Complete")),
+               rule=CanReachLocation("Dream 1 Complete") & OnRoadPasses(Has("Beach Road Pass"))),
 
     # Harbor Town & surrounding area
     Transition("Beach Road", "Holy Road"),

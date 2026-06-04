@@ -459,7 +459,7 @@ LEVEL_GRANTS: list[LocationDef] = [
     # --- Jizo Set Complete ---
     # Level granted on speaking to all 10 Jizo. Last accessible one is in Forest of Trials.
     LocationDef(LEVEL_GRANT_BASE_ID + 30, "Jizo Set Complete",
-                LocCategory.LEVEL_GRANT, region="Forest of Trials"),
+                LocCategory.LEVEL_GRANT, region="Forest of Trials", rule=CanReachRegion("Wano Village") & CanReachRegion("Harbor Town")),
 
     # --- After White God three levels are granted. ---
     LocationDef(LEVEL_GRANT_BASE_ID + 40, "ED Setup Level 1",
@@ -1264,23 +1264,23 @@ SCENES: list[LocationDef] = [
 
 STORY_CHECKPOINTS: list[LocationDef] = [
     LocationDef(STORY_CHECKPOINT_BASE_ID + 0, "Defeat White God",
-                LocCategory.STORY_CHECKPOINT, region="Crystal Room"),
+                LocCategory.STORY_CHECKPOINT, region="Crystal Room", rule=CanReachLocation("Dream 4 Complete") & CanReachLocation("Defeat Hikari (Tournament)") & CanReachLocation("Defeat Maki (Tournament)")),
     LocationDef(STORY_CHECKPOINT_BASE_ID + 1, "Defeat Tama",
-                LocCategory.STORY_CHECKPOINT, region="DLC2 Endgame"),
+                LocCategory.STORY_CHECKPOINT, region="DLC2 Endgame", rule=CanReachLocation("Defeat Athena")),
     # Dream 1 puts you in Chapter 2
     LocationDef(STORY_CHECKPOINT_BASE_ID + 2, "Dream 1 Complete",
                 LocCategory.STORY_CHECKPOINT, region="Big City", rule=CanReachLocation("Defeat Leo")),
     # Chapter 3
     LocationDef(STORY_CHECKPOINT_BASE_ID + 3, "Dream 2 Complete",
-                LocCategory.STORY_CHECKPOINT, region="Central"),
+                LocCategory.STORY_CHECKPOINT, region="Central", rule=CanReachLocation("Dream 1 Complete")),
     # Chapter 4
     LocationDef(STORY_CHECKPOINT_BASE_ID + 4, "Dream 3 Complete",
                 LocCategory.STORY_CHECKPOINT, region="Harbor Town",
-                rule=(CanReachLocation("Defeat Hikari (Wano)") & CanReachLocation("Defeat Leo (Harbor)"))),
+                rule=(CanReachLocation("Defeat Hikari (Wano)") & CanReachLocation("Defeat Leo (Harbor)") & CanReachLocation("Dream 2 Complete"))),
     # Chapter 5
     LocationDef(STORY_CHECKPOINT_BASE_ID + 5, "Dream 4 Complete",
                 LocCategory.STORY_CHECKPOINT, region="Hajime Village",
-                rule=CanReachLocation("Defeat Leo (Forest of Trials)")),
+                rule=CanReachLocation("Defeat Leo (Forest of Trials)") & CanReachLocation("Dream 3 Complete")),
 ]
 
 ULTIMATE_MOVES: list[LocationDef] = [

@@ -182,6 +182,9 @@ class YarimonoWorld(World):
         # progression.
         scenes = bool(self.options.randomize_yariman_encyclopedia)
 
+        # Road Passes are only added when the option is on.
+        road_passes = bool(self.options.road_passes_required)
+
         # Trainer Levels
         level_loc_count = self._count_level_slots()
         for _ in range(level_loc_count):
@@ -195,6 +198,8 @@ class YarimonoWorld(World):
             if it.category == ItemCategory.SCENE_UNLOCK and not scenes:
                 continue
             if it.category == ItemCategory.JUNK:
+                continue
+            if it.category == ItemCategory.ROAD_PASS and not road_passes:
                 continue
             pool.append(make_item(it.name, self.player, scenes_randomized=scenes))
 
@@ -222,7 +227,7 @@ class YarimonoWorld(World):
 
     # Slot data sent to the client
     def fill_slot_data(self) -> dict:
-        return {
+        data = {
             "goal": int(self.options.goal),
             "randomize_yariman_encyclopedia": bool(self.options.randomize_yariman_encyclopedia),
             "limited_cheat_tackle": int(self.options.limited_cheat_tackle),
@@ -234,4 +239,19 @@ class YarimonoWorld(World):
             "randomize_wild_yarimon": int(self.options.randomize_wild_yarimon),
             "randomize_yarimon_abilities": int(self.options.randomize_yarimon_abilities),
             "randomize_yarimon_moves": int(self.options.randomize_yarimon_moves),
+            "road_passes_required": bool(self.options.road_passes_required),
+            "road_pass_hints": bool(self.options.road_pass_hints),
         }
+        if data["road_passes_required"]:
+            pass_locations: dict[str, dict] = {}
+            for short, full in (("central", "Central Road Pass"),
+                                ("beach",   "Beach Road Pass"),
+                                ("cave",    "Cave Road Pass")):
+                locations = self.multiworld.find_item_locations(full, self.player)
+                if locations:
+                    pass_locations[short] = {
+                        "address": locations[0].address,
+                        "player":  locations[0].player,
+                    }
+            data["pass_locations"] = pass_locations
+        return data

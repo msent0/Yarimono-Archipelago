@@ -23,6 +23,7 @@ JUNK_BASE_ID = BASE_ID + 2000
 ULTIMATE_MOVE_BASE_ID = BASE_ID + 3000
 SCENE_UNLOCK_BASE_ID = BASE_ID + 4000
 GOLD_BASE_ID = BASE_ID + 5000
+ROAD_PASS_BASE_ID = BASE_ID + 6000
 
 
 class ItemCategory(IntEnum):
@@ -32,6 +33,7 @@ class ItemCategory(IntEnum):
     SCENE_UNLOCK = auto()
     JUNK = auto()
     GOLD = auto()
+    ROAD_PASS = auto()
 
 
 @dataclass(frozen=True)
@@ -458,6 +460,15 @@ ITEMS: list[ItemDef] = [
     ItemDef(GOLD_BASE_ID + 2, "2000 Yen", ItemCategory.GOLD, ItemClassification.filler),
     ItemDef(GOLD_BASE_ID + 5, "5000 Yen", ItemCategory.GOLD, ItemClassification.filler),
     ItemDef(GOLD_BASE_ID + 10, "10000 Yen", ItemCategory.GOLD, ItemClassification.filler),
+    
+    # --- Road Passes ---
+    ItemDef(ROAD_PASS_BASE_ID + 1, "Central Road Pass",
+            ItemCategory.ROAD_PASS, ItemClassification.progression),
+    ItemDef(ROAD_PASS_BASE_ID + 2, "Beach Road Pass",
+            ItemCategory.ROAD_PASS, ItemClassification.progression),
+    ItemDef(ROAD_PASS_BASE_ID + 3, "Cave Road Pass",
+            ItemCategory.ROAD_PASS, ItemClassification.progression),
+
 ]
 
 # Convenience lookups

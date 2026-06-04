@@ -134,6 +134,21 @@ class RandomizeYarimonMoves(Choice):
     option_on = 1
     default = option_off
 
+class RoadPassesRequired(Toggle):
+    """When on, the three exits out of Big City each require a corresponding
+    key item ("Central Road Pass" for the north exit, "Beach Road Pass" for the
+    west, "Cave Road Pass" for the south).
+    """
+    display_name = "Road Passes Required"
+
+
+class RoadPassHints(Toggle):
+    """When on the NPC at each of the three exits out of Big City will tell
+    you where to find the corresponding road pass.
+    """
+    display_name = "Road Pass Hints"
+
+
 @dataclass
 class YarimonoOptions(PerGameCommonOptions):
     goal: Goal
@@ -147,3 +162,5 @@ class YarimonoOptions(PerGameCommonOptions):
     randomize_wild_yarimon: RandomizeWildYarimon
     randomize_yarimon_abilities: RandomizeYarimonAbilities
     randomize_yarimon_moves: RandomizeYarimonMoves
+    road_passes_required: RoadPassesRequired
+    road_pass_hints: RoadPassHints
