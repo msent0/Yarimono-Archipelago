@@ -2481,7 +2481,7 @@
     DataManager.onLoad = function (object) {
         _DataManager_onLoad.call(this, object);
         if (object === $dataSystem) _padSwitchArray();
-        if ($gameSystem && SaveStorage.isAPSave($gameSystem)) return;
+        if (!$gameSystem || !SaveStorage.isAPSave($gameSystem)) return;
         if (object === $dataCommonEvents) {
             applyCommonEventPatches();
         } else if (object === $dataMap && eventPatchLoadingMapId != null) {
@@ -3241,6 +3241,7 @@
         if (!$gameMap || $gameMap.mapId() !== mapId) return;
         if (!$gameMap._events || !$dataMap || !$dataMap.events) return;
         let filled = 0;
+        if ($dataMap.id !== mapId) return;
         for (let i = 0; i < $gameMap._events.length; i++) {
             if (!$gameMap._events[i]) continue;
             if ($dataMap.events[i]) continue;
