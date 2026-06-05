@@ -147,7 +147,22 @@ class RoadPassHints(Toggle):
     you where to find the corresponding road pass.
     """
     display_name = "Road Pass Hints"
+    
+class RandomizeTrainerGoldReward(Toggle):
+    """When on, money recieved from defeating trainers are now locations and
+    battle prize money is added to the item pool.
+    """
+    display_name = "Randomize Trainer Money Reward"
 
+class TrainerRewardMoneyAmount(Range):
+    """The game, by default, gives a flat 1000 yen for defeating a male trainer.
+    This option allows you to change that amount.
+    """
+    display_name = "Trainer Reward Money Amount"
+    range_start = 0
+    range_end = 100000
+    default = 1000
+    
 
 @dataclass
 class YarimonoOptions(PerGameCommonOptions):
@@ -164,3 +179,5 @@ class YarimonoOptions(PerGameCommonOptions):
     randomize_yarimon_moves: RandomizeYarimonMoves
     road_passes_required: RoadPassesRequired
     road_pass_hints: RoadPassHints
+    randomize_trainer_gold_reward: RandomizeTrainerGoldReward
+    trainer_reward_money_amount: TrainerRewardMoneyAmount

@@ -10,7 +10,7 @@ from .Items import (
     ITEMS, ITEM_BY_NAME, ItemCategory, ItemDef, YarimonoItem, make_item,
 )
 from .Locations import (
-    ALL_LOCATIONS, LOCATION_BY_NAME, LocCategory, YarimonoLocation,
+    ALL_LOCATIONS, LOCATION_BY_NAME, LocCategory, YarimonoLocation, GOLD_REWARDS,
     extra_shop_locations,
 )
 from .Options import YarimonoOptions
@@ -158,11 +158,16 @@ class YarimonoWorld(World):
 
         # Filter scenes based on the encyclopedia option.
         include_scenes = bool(self.options.randomize_yariman_encyclopedia)
-
+        
+        # Filter gold reward locations based on randomized trainer gold reward option.
+        gold_rewards = bool(self.options.randomize_trainer_gold_reward)
+  
         for loc_def in LOCATION_BY_NAME.values():
             if loc_def.category == LocCategory.SCENE_UNLOCK and not include_scenes:
                 continue
             if loc_def.category == LocCategory.EXTRA_SHOP and loc_def.code not in used_extra_codes:
+                continue
+            if loc_def.category == LocCategory.GOLD_REWARD and not gold_rewards:
                 continue
             self._attach_location(loc_def)
 
@@ -184,6 +189,9 @@ class YarimonoWorld(World):
 
         # Road Passes are only added when the option is on.
         road_passes = bool(self.options.road_passes_required)
+        
+        # Gold rewards are only added when the option is on.
+        gold_rewards = bool(self.options.randomize_trainer_gold_reward)
 
         # Trainer Levels
         level_loc_count = self._count_level_slots()
@@ -199,12 +207,23 @@ class YarimonoWorld(World):
                 continue
             if it.category == ItemCategory.JUNK:
                 continue
+            if it.category == ItemCategory.GOLD:
+                continue
             if it.category == ItemCategory.ROAD_PASS and not road_passes:
                 continue
             pool.append(make_item(it.name, self.player, scenes_randomized=scenes))
 
+        # Add gold reward items if the option is on.
+        if gold_rewards:
+            # Add one trainer gold reward item for len(GOLD_REWARDS) locations
+            for _ in range(len(GOLD_REWARDS)):
+                pool.append(make_item("Trainer Gold Reward", self.player, scenes_randomized=scenes))
+
         # Fill with random junk to make item and location sizes match.
         junk_names = [it.name for it in ITEMS if it.category == ItemCategory.JUNK]
+        # Junk also includes all gold items except Trainer Yen Reward
+        gold_items = [it.name for it in ITEMS if it.category == ItemCategory.GOLD and it.name != "Trainer Yen Reward"]
+        junk_names.extend(gold_items)
         unfilled = self._unfilled_count() - len(pool)
         for _ in range(max(0, unfilled)):
             name = self.multiworld.random.choice(junk_names)
@@ -241,6 +260,8 @@ class YarimonoWorld(World):
             "randomize_yarimon_moves": int(self.options.randomize_yarimon_moves),
             "road_passes_required": bool(self.options.road_passes_required),
             "road_pass_hints": bool(self.options.road_pass_hints),
+            "randomize_trainer_gold_reward": bool(self.options.randomize_trainer_gold_reward),
+            "trainer_reward_money_amount": int(self.options.trainer_reward_money_amount),
         }
         if data["road_passes_required"]:
             pass_locations: dict[str, dict] = {}

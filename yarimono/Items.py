@@ -456,6 +456,7 @@ ITEMS: list[ItemDef] = [
             ItemCategory.SCENE_UNLOCK, ItemClassification.filler),
     
     # --- Gold (Yen) ---
+    ItemDef(GOLD_BASE_ID + 0, "Trainer Yen Reward", ItemCategory.GOLD, ItemClassification.filler),
     ItemDef(GOLD_BASE_ID + 1, "1000 Yen", ItemCategory.GOLD, ItemClassification.filler),
     ItemDef(GOLD_BASE_ID + 2, "2000 Yen", ItemCategory.GOLD, ItemClassification.filler),
     ItemDef(GOLD_BASE_ID + 5, "5000 Yen", ItemCategory.GOLD, ItemClassification.filler),

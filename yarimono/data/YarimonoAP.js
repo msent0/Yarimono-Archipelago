@@ -36,6 +36,7 @@
         EVENT_PICKUP: 1088000,
         STORY_CHECKPOINT: 1089000,
         ULTIMATE_MOVE: 1090000,
+        TRAINER_GOLD_REWARD: 1091000,
     }
 
     const CLIENT_GOAL = 30;
@@ -453,6 +454,11 @@
     ]);
 
     const RANDOM_MOVE_ABILITY_SKIP_YARIMON_IDS = new Set([159, 160, 169, 177, 178, 179]);
+
+    const TRAINER_GOLD_REWARD_TRAINER_IDS = new Set([
+        57, 6, 7, 8, 9, 3, 5, 21, 31, 53, 52, 124, 55, 24, 23, 14, 
+        15, 122, 85, 56, 125, 123, 30, 26, 20
+    ]);
     // #endregion
 
     // #region CSS 
@@ -1296,6 +1302,13 @@
             for (const locId of MUSHROOM_LOCATIONS) ids.push(locId);
             // Leo Big City fight
             ids.push(LEO_BIG_CITY_LOC_ID);
+
+            if (this.slot_data && this.slot_data.randomize_trainer_gold_reward) {
+                for (const tid of TRAINER_GOLD_REWARD_TRAINER_IDS) {
+                    ids.push(LOCATION_IDS.TRAINER_GOLD_REWARD + tid);
+                }
+            }
+
             if (ids.length) this.sendLocationScouts(ids);
         }
 
@@ -3006,11 +3019,9 @@
                     if (!c) continue;
                     if (c.switch1Valid && c.switch1Id === switchId) {
                         c.switch1Id = trackerId;
-                        log(`tutor ${mapId}:${eventId} page ${i} cond1 switch ${switchId}→${trackerId}`);
                     }
                     if (c.switch2Valid && c.switch2Id === switchId) {
                         c.switch2Id = trackerId;
-                        log(`tutor ${mapId}:${eventId} page ${i} cond2 switch ${switchId}→${trackerId}`);
                     }
                 }
             },
@@ -3064,6 +3075,58 @@
             },
         });
     }
+
+    // CE 62. Responsible for granting 1000 gold after beating a trainer.
+    // Amount may be changed by slot_data.trainer_reward_money_amount. Becomes a location if randomize_trainer_gold_reward is on.
+    //{"id":62,"list":[{"code":250,"indent":0,"parameters":[{"name":"money_box2","volume":90,"pitch":100,"pan":0}]},{"code":101,"indent":0,"parameters":["",0,2,2]},{"code":401,"indent":0,"parameters":["Received 1000 yen."]},{"code":125,"indent":0,"parameters":[0,0,1000]},{"code":0,"indent":0,"parameters":[]}],"name":"【汎】男に勝利共通1000円","switchId":1,"trigger":0},
+    defineEventPatch({
+        target: { commonEventId: 62 },
+        transform: (list, _ctx) => {
+            const moneyCmd = list.find(cmd => cmd.code === 125);
+            if (!moneyCmd) {
+                warn("Couldn't find money command in CE 62 to patch trainer gold reward");
+                return list;
+            }
+            if (client && client.slot_data.randomize_trainer_gold_reward) {
+                log(`Patching CE 62 to grant trainer gold reward location instead of money`);
+                // Instead of giving money, send a location check. Replace the text with scouted item name.
+                let loadVarKey = _registerHandler((trainerId) => {
+                    if (!client) return;
+                    const locId = LOCATION_IDS.TRAINER_GOLD_REWARD + trainerId;
+                    const itemName = resolveItemName(locId);
+                    $gameVariables.setValue(61, itemName);
+                    // Send location check
+                    client.sendLocationChecks([locId]);
+                });
+                return [
+                    // Load item name into var 61
+                    { code: 355, indent: 0, parameters: [`window.${loadVarKey}(btlTrainerId)`] },
+                    // Sound effect for money gain
+                    { code: 250, indent: 0, parameters: [{ name: "money_box2", volume: 90, pitch: 100, pan: 0 }] },
+                    // Start message
+                    { code: 101, indent: 0, parameters: ["", 0, 2, 2] }, 
+                    // Show message with item name
+                    { code: 401, indent: 0, parameters: ["Received \\V[61]."] },
+                    // End
+                    { code: 0, indent: 0, parameters: [] },
+                ]
+            } else if (client && client.slot_data.trainer_reward_money_amount != null && client.slot_data.trainer_reward_money_amount !== 1000) {
+                // If the amount is changed but not randomized, just change the amount of money given.
+                const amount = client.slot_data.trainer_reward_money_amount == null ? 1000 : client.slot_data.trainer_reward_money_amount;
+                // Change the displayed text to reflect the new amount as well.
+                const textCmd = list.find(cmd => cmd.code === 401);
+                if (textCmd && textCmd.parameters[0]) {
+                    textCmd.parameters[0] = `Received ${amount} yen.`;
+                }
+                log(`Patching CE 62 to change trainer gold reward amount to ${amount}`);
+                moneyCmd.parameters[2] = amount;
+                return list;
+            }
+            return list;
+        },
+    });
+
+
     // #endregion
 
     // #region Map Additions
@@ -3840,7 +3903,12 @@
             }
         } else if (itemId >= ITEM_IDS.GOLD && itemId < ITEM_IDS.ROAD_PASS) {
             // Gold/Yen. Value is itemId - ITEM_IDS.GOLD * 1000
-            const amount = (itemId - ITEM_IDS.GOLD) * 1000;
+            let amount = (itemId - ITEM_IDS.GOLD) * 1000;
+            // If the amount is 0, special case, it's the value of slot_data.trainer_reward_money_amount (default 1000).
+            if (amount === 0) {
+                const v = client && client.slot_data ? client.slot_data.trainer_reward_money_amount : 1000; 
+                amount = v != null ? v : 1000;
+            }
             log(`Adding ${amount} gold to inventory for received item ${itemId}`);
             $gameParty.gainGold(amount);
         } else if (itemId >= ITEM_IDS.ROAD_PASS) {

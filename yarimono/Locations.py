@@ -36,6 +36,7 @@ EVENT_PURCHASE_BASE_ID = BASE_ID + 5000
 EVENT_PICKUP_BASE_ID = BASE_ID + 6000
 STORY_CHECKPOINT_BASE_ID = BASE_ID + 7000
 ULTIMATE_MOVE_BASE_ID = BASE_ID + 8000
+TRAINER_GOLD_REWARD_BASE_ID = BASE_ID + 9000
 
 AP_PURCHASE_SLOTS: list[tuple[str, int, str]] = [
         # Main shops
@@ -105,6 +106,7 @@ class LocCategory(IntEnum):
     EVENT_PICKUP = auto()
     STORY_CHECKPOINT = auto()
     ULTIMATE_MOVE_BASE_ID = auto()
+    GOLD_REWARD = auto()
 
 
 @dataclass(frozen=True)
@@ -1300,6 +1302,59 @@ ULTIMATE_MOVES: list[LocationDef] = [
                 LocCategory.STORY_CHECKPOINT, region="Old Road North", rule=CanReachLocation("Defeat Orochi")),
 ]
 
+GOLD_REWARDS: list[LocationDef] = [
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 57, "Watson Yen Reward",
+                LocCategory.GOLD_REWARD, region="Big City", rule=CanReachLocation("Defeat Watson")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 6, "Shota Yen Reward",
+                LocCategory.GOLD_REWARD, region="Big City", rule=CanReachLocation("Defeat Shota")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 7, "Rokurou Yen Reward",
+                LocCategory.GOLD_REWARD, region="Big City", rule=CanReachLocation("Defeat Rokurou")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 8, "Jinbei Yen Reward",
+                LocCategory.GOLD_REWARD, region="Big City", rule=CanReachLocation("Defeat Jinbei")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 9, "Yoshimitsu Yen Reward",
+                LocCategory.GOLD_REWARD, region="Big City", rule=CanReachLocation("Defeat Yoshimitsu")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 3, "Kantaro Yen Reward",
+                LocCategory.GOLD_REWARD, region="Hajime Road", rule=CanReachLocation("Defeat Kantaro")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 5, "Takezou Yen Reward",
+                LocCategory.GOLD_REWARD, region="Hajime Road", rule=CanReachLocation("Defeat Takezou")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 21, "Fence Yen Reward",
+                LocCategory.GOLD_REWARD, region="Cave Road", rule=CanReachLocation("Defeat Fence")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 31, "Dengaku Yen Reward",
+                LocCategory.GOLD_REWARD, region="City Road", rule=CanReachLocation("Defeat Dengaku")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 53, "Anderson Yen Reward",
+                LocCategory.GOLD_REWARD, region="Wano Village", rule=CanReachLocation("Defeat Anderson")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 52, "Little Ta-ke Yen Reward",
+                LocCategory.GOLD_REWARD, region="Wano Village", rule=CanReachLocation("Defeat Little Ta-ke")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 124, "Bunta Yen Reward",
+                LocCategory.GOLD_REWARD, region="Wano Village", rule=CanReachLocation("Defeat Bunta")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 55, "Umenoki Yen Reward",
+                LocCategory.GOLD_REWARD, region="Shrine", rule=CanReachLocation("Defeat Umenoki")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 24, "Battou Yen Reward",
+                LocCategory.GOLD_REWARD, region="Wano Mountain Cave B1F", rule=CanReachLocation("Defeat Battou")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 23, "Akage Yen Reward",
+                LocCategory.GOLD_REWARD, region="Wano Mountain Cave B1F", rule=CanReachLocation("Defeat Akage")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 14, "Yamato Yen Reward",
+                LocCategory.GOLD_REWARD, region="Beach Road", rule=CanReachLocation("Defeat Yamato")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 15, "Gyan Yen Reward",
+                LocCategory.GOLD_REWARD, region="Beach Road", rule=CanReachLocation("Defeat Gyan")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 122, "Manpuku Yen Reward",
+                LocCategory.GOLD_REWARD, region="Beach Road", rule=CanReachLocation("Defeat Manpuku")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 85, "Shouta Yen Reward",
+                LocCategory.GOLD_REWARD, region="Harbor Town", rule=CanReachLocation("Defeat Shouta")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 56, "Smith Yen Reward",
+                LocCategory.GOLD_REWARD, region="Old Road", rule=CanReachLocation("Defeat Smith")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 125, "Charlie Yen Reward",
+                LocCategory.GOLD_REWARD, region="Old Road North", rule=CanReachLocation("Defeat Charlie")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 123, "Masayuki Yen Reward",
+                LocCategory.GOLD_REWARD, region="Wano Road", rule=CanReachLocation("Defeat Masayuki")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 30, "Matsunoki Yen Reward",
+                LocCategory.GOLD_REWARD, region="Holy Road", rule=CanReachLocation("Defeat Matsunoki")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 26, "Shingo Yen Reward",
+                LocCategory.GOLD_REWARD, region="Typeless Gym", rule=CanReachLocation("Defeat Shingo")),
+    LocationDef(TRAINER_GOLD_REWARD_BASE_ID + 20, "Corn Yen Reward",
+                LocCategory.GOLD_REWARD, region="Ryugasaki Gym", rule=CanReachLocation("Defeat Corn")),
+]
+
 
 # Pre-generate every possible extra-shop slot so we can put them in
 # location_name_to_id.
@@ -1313,7 +1368,7 @@ ALL_EXTRA_SHOP_LOCATIONS: list[LocationDef] = extra_shop_locations(_MAX_EXTRA_SH
 ALL_LOCATIONS: list[LocationDef] = (
         TRAINER_FIGHTS + LEVEL_GRANTS + PICKUPS + KEY_PICKUPS
         + EVENT_PURCHASES + SCENES + STORY_CHECKPOINTS + ULTIMATE_MOVES
-        + ALL_EXTRA_SHOP_LOCATIONS
+        + GOLD_REWARDS + ALL_EXTRA_SHOP_LOCATIONS 
 )
 LOCATION_BY_NAME: dict[str, LocationDef] = {loc.name: loc for loc in ALL_LOCATIONS}
 LOCATION_BY_CODE: dict[int, LocationDef] = {loc.code: loc for loc in ALL_LOCATIONS}
