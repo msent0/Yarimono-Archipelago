@@ -20,7 +20,7 @@ class Goal(Choice):
     default = option_champion
 
 
-class RandomizeYarimanEncyclopedia(DefaultOnToggle):
+class RandomizeYarimanEncyclopedia(Toggle):
     """When on, each Yariman Encyclopedia scene unlock becomes an Archipelago
     location and item.
     """
