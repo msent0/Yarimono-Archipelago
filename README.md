@@ -10,7 +10,8 @@ Things randomized:
   - Chests and hidden item pickups.
   - Event items in shops.
   - Ultimate move unlocks for each type.
-  - (Optional, default on) Yariman Encyclopedia scene unlocks.
+  - (Optional) Yariman Encyclopedia scene unlocks.
+  - (Optional) Trainer battle money rewards.
 
 There are four possible goals to choose from:
  - Defeat White God - Normal game completion.
