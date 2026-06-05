@@ -140,7 +140,7 @@ class YarimonoWorld(World):
 
     item_name_to_id = {it.name: it.code for it in ITEMS}
     location_name_to_id = {loc.name: loc.code for loc in ALL_LOCATIONS}
-
+    explicit_indirect_conditions = False
 
     def __init__(self, multiworld, player):
         super().__init__(multiworld, player)
