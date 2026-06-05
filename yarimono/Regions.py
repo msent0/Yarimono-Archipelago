@@ -153,7 +153,7 @@ TRANSITIONS: list[Transition] = [
                rule=CanReachLocation("Defeat Aya")),
     Transition("Ryugasaki Gym", "Ryugasaki Gym Rest Area"),
     Transition("Big City", "Event Venue 1F",
-               rule=CanReachLocation("Dream 2 Complete")),
+               rule=CanReachLocation("Dream 3 Complete")),
     Transition("Big City", "Ero Doujin Building",
                rule=CanReachLocation("Defeat Athena")),
 

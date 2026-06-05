@@ -217,7 +217,7 @@ class YarimonoWorld(World):
         if gold_rewards:
             # Add one trainer gold reward item for len(GOLD_REWARDS) locations
             for _ in range(len(GOLD_REWARDS)):
-                pool.append(make_item("Trainer Gold Reward", self.player, scenes_randomized=scenes))
+                pool.append(make_item("Trainer Yen Reward", self.player, scenes_randomized=scenes))
 
         # Fill with random junk to make item and location sizes match.
         junk_names = [it.name for it in ITEMS if it.category == ItemCategory.JUNK]
