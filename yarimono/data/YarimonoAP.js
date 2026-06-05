@@ -420,7 +420,7 @@
         acc[move.id] = move;
         return acc;
     }, {});
-    const LEGAL_ATTACKING_MOVES = LEGAL_RANDOM_MOVE.filter(m => m.power > 0).map(m => m.id);
+    const LEGAL_ATTACKING_MOVES = LEGAL_RANDOM_MOVE.filter(m => m.power > 0);
 
     const RANDOMIZABLE_TRAINER_IDS = new Set([
         2, 34, 63, 86, 90, 3, 13, 4, 36, 5, 35, 41, 56, 12, 47, 
@@ -4397,7 +4397,7 @@
         function walkLine(ym, mapping) {
             if (!ym || !ym.wazaList) return;
             if (RANDOM_MOVE_ABILITY_SKIP_YARIMON_IDS.has(ym.id)) return;
-            for (const [i, learn] of Object.entries(ym.wazaList)) {
+            for (const [i, learn] of ym.wazaList.entries()) {
                 if (learn._origId !== undefined) continue;
                 if (mapping[learn.id] !== undefined) {
                     learn._origId = learn.id;
