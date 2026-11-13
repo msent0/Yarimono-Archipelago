@@ -101,7 +101,7 @@ ITEMS: list[ItemDef] = [
     ItemDef(EVENT_ITEM_BASE_ID + 54, "5000 Yen Swimsuit Voucher 2",
             ItemCategory.EVENT_ITEM, ItemClassification.useful),
     ItemDef(EVENT_ITEM_BASE_ID + 56, "Matsutake",
-            ItemCategory.EVENT_ITEM, ItemClassification.useful),
+            ItemCategory.EVENT_ITEM, ItemClassification.progression),
     ItemDef(EVENT_ITEM_BASE_ID + 57, "Wonderful Spray",
             ItemCategory.EVENT_ITEM, ItemClassification.useful),
 
