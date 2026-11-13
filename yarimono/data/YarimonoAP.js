@@ -3637,6 +3637,7 @@
     // #region Road Passes
     // Three optional progression items that gate the exits out of Big City.
     const SW_ROAD_PASS_HINTS_ENABLED = 901;
+    const SW_ROAD_PASSES_ENABLED = 902;
     const VAR_ROAD_PASS_HINT = 61;
     const SW_BIG_CITY_AFTER_DREAM = 96;
     // Game items added in the 300 range.
@@ -3747,6 +3748,9 @@
     function initRoadPasses() {
         if (!client || !client.slot_data) return;
         addRoadPassItemData();
+        const wantsPasses = !!client.slot_data.road_passes_required;
+        $gameSwitches.setValue(SW_ROAD_PASSES_ENABLED, wantsPasses);
+        log(`Road passes ${wantsPasses ? "enabled" : "disabled"} based on AP slot data.`);
         const wantsHints = client.slot_data.road_pass_hints;
         $gameSwitches.setValue(SW_ROAD_PASS_HINTS_ENABLED, wantsHints);
         log(`Road pass hints ${wantsHints ? "enabled" : "disabled"} based on AP slot data.`);
@@ -3789,14 +3793,14 @@
     for (const p of ROAD_PASSES) {
         // Append a page to the existing city exit block event. The condition on
         // it means it activates after the player hits chapter 3, which is when
-        // the previous page stops blocking.
+        // the previous page stops blocking. Also requires road passes to be on.
         defineEventPatch({
             target: { mapId: 17, eventId: p.exitEventId },
             root: true,
             transform: (evt) => {
                 const npc = `window.$ap.event('${p.dir}')`;
                 evt.pages.push(_specToPage({
-                    conditions: { switchId: SW_BIG_CITY_AFTER_DREAM, switchValue: true },
+                    conditions: { switchId: SW_BIG_CITY_AFTER_DREAM, switchValue: true, switch2Id: SW_ROAD_PASSES_ENABLED, switch2Value: true },
                     priority: 'below', trigger: 'playerTouch', through: true,
                     commands: [
                         { code: 108, parameters: [p.areaTag] },
@@ -3827,7 +3831,7 @@
             name: `${p.dir}`,
             pages: [
                 {
-                    conditions: { switchId: SW_BIG_CITY_AFTER_DREAM, switchValue: true },
+                    conditions: { switchId: SW_BIG_CITY_AFTER_DREAM, switchValue: true, switch2Id: SW_ROAD_PASSES_ENABLED, switch2Value: true },
                     image: { characterName: p.npc.characterName, characterIndex: p.npc.characterIndex, direction: p.npc.direction },
                     priority: 'same', trigger: 'action',
                     commands: _npcCommands(p),
